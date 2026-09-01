@@ -12,6 +12,8 @@ struct SettingsActions {
     var applyRetention: () -> Void = {}
     var clipCount: () -> Int = { 0 }
     var clearHistory: () -> Void = {}
+    var checkForUpdates: () -> Void = {}
+    var applyUpdateSettings: () -> Void = {}
 }
 
 struct SettingsScene: View {
@@ -30,7 +32,7 @@ struct SettingsScene: View {
             RecognitionSettings(preferences: preferences)
                 .tabItem { Label("Text", systemImage: "text.viewfinder") }
 
-            AboutSettings()
+            AboutSettings(preferences: preferences, actions: actions)
                 .tabItem { Label("About", systemImage: "info.circle") }
         }
         // Sized to the tallest tab rather than left to shrink-wrap the one that
@@ -261,6 +263,9 @@ private struct RecognitionSettings: View {
 
 private struct AboutSettings: View {
 
+    @Bindable var preferences: Preferences
+    let actions: SettingsActions
+
     private var version: String {
         let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
@@ -285,6 +290,22 @@ private struct AboutSettings: View {
             Link("github.com/sigitkusuma/copas",
                  destination: URL(string: "https://github.com/sigitkusuma/copas")!)
                 .font(.system(size: 11))
+
+            Divider().padding(.horizontal, 40)
+
+            VStack(spacing: 8) {
+                Button("Check for Updates…") { actions.checkForUpdates() }
+
+                Toggle("Check automatically", isOn: $preferences.checksForUpdatesAutomatically)
+                    .onChange(of: preferences.checksForUpdatesAutomatically) {
+                        actions.applyUpdateSettings()
+                    }
+
+                Toggle("Include beta releases", isOn: $preferences.receivesBetaUpdates)
+                    .onChange(of: preferences.receivesBetaUpdates) { actions.applyUpdateSettings() }
+            }
+            .toggleStyle(.checkbox)
+            .font(.system(size: 12))
 
             Divider().padding(.horizontal, 40)
 

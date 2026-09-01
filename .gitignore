@@ -22,3 +22,6 @@ sparkle-private-key.txt
 
 # macOS
 .DS_Store
+
+# Release artifacts
+build/artifacts/

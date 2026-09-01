@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Distribution outside the App Store, signed with a Developer ID. -->
+	<key>method</key>
+	<string>developer-id</string>
+	<key>teamID</key>
+	<string>Q6HKRLR2CN</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>signingCertificate</key>
+	<string>Developer ID Application</string>
+	<!-- Sparkle.framework contains nested code — Autoupdate, the XPC services —
+	     that has to be re-signed inside-out. exportArchive does that correctly;
+	     `codesign --deep` does not, and produces bundles that pass --verify and
+	     then fail at update time. -->
+	<key>uploadSymbols</key>
+	<false/>
+</dict>
+</plist>

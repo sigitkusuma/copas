@@ -29,6 +29,8 @@ final class Preferences {
 
         excludedBundleIDs = defaults.stringArray(forKey: Key.excludedBundleIDs) ?? []
 
+        checksForUpdatesAutomatically = defaults.object(forKey: Key.checksForUpdates) as? Bool ?? true
+        receivesBetaUpdates = defaults.object(forKey: Key.receivesBetaUpdates) as? Bool ?? false
         recognizesTextInImages = defaults.object(forKey: Key.recognizesTextInImages) as? Bool ?? true
         copiesImageWhenNoTextFound = defaults.object(forKey: Key.copiesImageWhenNoTextFound) as? Bool ?? true
     }
@@ -101,6 +103,18 @@ final class Preferences {
         didSet { defaults.set(copiesImageWhenNoTextFound, forKey: Key.copiesImageWhenNoTextFound) }
     }
 
+    // MARK: - Updates
+
+    var checksForUpdatesAutomatically: Bool {
+        didSet { defaults.set(checksForUpdatesAutomatically, forKey: Key.checksForUpdates) }
+    }
+
+    /// Opt in to pre-releases. Off by default, and off is the only safe default:
+    /// somebody who has not asked for beta builds should never be handed one.
+    var receivesBetaUpdates: Bool {
+        didSet { defaults.set(receivesBetaUpdates, forKey: Key.receivesBetaUpdates) }
+    }
+
     // MARK: - Login item
 
     /// Not stored here. `SMAppService` keeps the real answer, and a copy in
@@ -131,6 +145,8 @@ final class Preferences {
         static let maximumClipCount = "history.maximumCount"
         static let maximumClipAgeInDays = "history.maximumAgeInDays"
         static let excludedBundleIDs = "history.excludedBundleIDs"
+        static let checksForUpdates = "updates.automatic"
+        static let receivesBetaUpdates = "updates.beta"
         static let recognizesTextInImages = "recognition.automatic"
         static let copiesImageWhenNoTextFound = "recognition.copiesImageWhenNoTextFound"
     }

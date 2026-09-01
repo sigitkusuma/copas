@@ -82,6 +82,24 @@ final class PreferencesTests {
         #expect(preferences.excludedBundleIDs.isEmpty)
     }
 
+    /// Off is the only safe default: somebody who has not asked for pre-release
+    /// builds should never be handed one.
+    @Test func betaUpdatesAreOffUntilAskedFor() {
+        let preferences = make()
+        #expect(preferences.checksForUpdatesAutomatically)
+        #expect(!preferences.receivesBetaUpdates)
+    }
+
+    @Test func updateChoicesSurviveARelaunch() {
+        let first = make()
+        first.checksForUpdatesAutomatically = false
+        first.receivesBetaUpdates = true
+
+        let second = make()
+        #expect(!second.checksForUpdatesAutomatically)
+        #expect(second.receivesBetaUpdates)
+    }
+
     /// Preferences that survive a relaunch have to survive being written down,
     /// and a shortcut is the only thing here that is not a plain value.
     @Test func aShortcutRoundTripsThroughStorage() throws {

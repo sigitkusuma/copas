@@ -19,6 +19,7 @@ final class StatusItemController {
         var shortcuts: () -> (board: KeyCombination, capture: KeyCombination) = {
             (.showBoard, .captureToText)
         }
+        var checkForUpdates: () -> Void = {}
         var openSettings: () -> Void = {}
         var quit: () -> Void = {}
     }
@@ -91,6 +92,7 @@ final class StatusItemController {
         ))
 
         menu.addItem(.separator())
+        menu.addItem(item("Check for Updates…", #selector(menuCheckForUpdates)))
         menu.addItem(item("Settings…", #selector(menuOpenSettings), key: ","))
         menu.addItem(item("Quit Copas", #selector(menuQuit), key: "q"))
 
@@ -127,6 +129,7 @@ final class StatusItemController {
     @objc private func menuToggleBoard() { actions.toggleBoard() }
     @objc private func menuCaptureToText() { actions.captureToText() }
     @objc private func menuTogglePause() { actions.togglePause(); refresh() }
+    @objc private func menuCheckForUpdates() { actions.checkForUpdates() }
     @objc private func menuOpenSettings() { actions.openSettings() }
     @objc private func menuQuit() { actions.quit() }
 }

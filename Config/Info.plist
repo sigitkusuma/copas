@@ -31,6 +31,8 @@
 	<!-- Sparkle. SUPublicEDKey is added in the Sparkle phase; release.sh
 	     refuses to ship if either of these is empty, because a missing key
 	     produces an updater that is permanently broken and silently so. -->
+	<key>SUPublicEDKey</key>
+	<string>yhl/cTa9kFhPHl2qG3Pa9wHkYzO1JRvy7gpn/2h9lzs=</string>
 	<key>SUFeedURL</key>
 	<string>https://sigitkusuma.github.io/copas/appcast.xml</string>
 	<key>SUEnableAutomaticChecks</key>

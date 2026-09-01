@@ -38,10 +38,17 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
     // Capture to text.
     private let regionCapture = RegionCapture()
 
+    private var updates: UpdateCoordinator?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         openStore()
         startCapturing()
         registerHotkeys()
+
+        // After the store, so a failure here cannot stop the app from being a
+        // clipboard manager. An app that will not launch because it could not
+        // ask about updates has its priorities backwards.
+        updates = UpdateCoordinator(preferences: preferences)
 
         statusItem = StatusItemController(actions: StatusItemController.Actions(
             toggleBoard: { [weak self] in self?.toggleBoard() },
@@ -53,6 +60,7 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
                 guard let self else { return (.showBoard, .captureToText) }
                 return (preferences.showBoardHotkey, preferences.captureToTextHotkey)
             },
+            checkForUpdates: { [weak self] in self?.updates?.checkForUpdates() },
             openSettings: { [weak self] in self?.openSettings() },
             quit: { NSApp.terminate(nil) }
         ))
@@ -202,7 +210,13 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             applyExclusions: { [weak self] in self?.applyExclusions() },
             applyRetention: { [weak self] in self?.applyRetention() },
             clipCount: { [weak self] in (try? self?.clips?.count()) ?? 0 },
-            clearHistory: { [weak self] in self?.clearHistory() }
+            clearHistory: { [weak self] in self?.clearHistory() },
+            checkForUpdates: { [weak self] in self?.updates?.checkForUpdates() },
+            applyUpdateSettings: { [weak self] in
+                guard let self else { return }
+                updates?.checksAutomatically = preferences.checksForUpdatesAutomatically
+                updates?.wantsBetaUpdates = preferences.receivesBetaUpdates
+            }
         )
     }
 
