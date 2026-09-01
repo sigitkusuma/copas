@@ -60,6 +60,10 @@ struct ClipRecord: Codable, Sendable, Identifiable, Equatable, FetchableRecord, 
     var inlineText: String?
     var blobKey: String?
     var thumbKey: String?
+    /// Blob keys for the same text in richer formats, when the source app
+    /// offered them. Both nil for plain text, which is most clips.
+    var rtfKey: String?
+    var htmlKey: String?
     var pixelWidth: Int?
     var pixelHeight: Int?
     var recognizedText: String?
@@ -83,6 +87,8 @@ struct ClipRecord: Codable, Sendable, Identifiable, Equatable, FetchableRecord, 
         case inlineText = "inline_text"
         case blobKey = "blob_key"
         case thumbKey = "thumb_key"
+        case rtfKey = "rtf_key"
+        case htmlKey = "html_key"
         case pixelWidth = "pixel_width"
         case pixelHeight = "pixel_height"
         case recognizedText = "recognized_text"
@@ -100,6 +106,8 @@ struct ClipRecord: Codable, Sendable, Identifiable, Equatable, FetchableRecord, 
         static let contentHash = Column(CodingKeys.contentHash)
         static let blobKey = Column(CodingKeys.blobKey)
         static let thumbKey = Column(CodingKeys.thumbKey)
+        static let rtfKey = Column(CodingKeys.rtfKey)
+        static let htmlKey = Column(CodingKeys.htmlKey)
         static let recognizedText = Column(CodingKeys.recognizedText)
         static let recognizedAt = Column(CodingKeys.recognizedAt)
     }
@@ -111,6 +119,11 @@ struct ClipRecord: Codable, Sendable, Identifiable, Equatable, FetchableRecord, 
     /// A clip whose bytes live outside the row, and so needs the blob store to be
     /// readable at all.
     var isBlobBacked: Bool { blobKey != nil }
+
+    /// Every blob this clip refers to. The launch sweep asks each row for this,
+    /// so a format added later cannot be forgotten and collected out from under
+    /// a live clip.
+    var referencedBlobKeys: [String] { [blobKey, rtfKey, htmlKey].compactMap { $0 } }
 }
 
 // MARK: - Construction
@@ -128,6 +141,8 @@ extension ClipRecord {
         source: SourceApp = SourceApp(),
         at date: Date = Date(),
         id: String = UUID().uuidString,
+        rtfKey: String? = nil,
+        htmlKey: String? = nil,
         overflow: (Data) throws -> String
     ) rethrows -> ClipRecord {
         let data = Data(string.utf8)
@@ -146,6 +161,8 @@ extension ClipRecord {
             inlineText: inline ? string : nil,
             blobKey: inline ? nil : try overflow(data),
             thumbKey: nil,
+            rtfKey: rtfKey,
+            htmlKey: htmlKey,
             pixelWidth: nil,
             pixelHeight: nil,
             recognizedText: nil,
@@ -182,6 +199,8 @@ extension ClipRecord {
             inlineText: nil,
             blobKey: blobKey,
             thumbKey: thumbKey,
+            rtfKey: nil,
+            htmlKey: nil,
             pixelWidth: pixelWidth,
             pixelHeight: pixelHeight,
             recognizedText: nil,

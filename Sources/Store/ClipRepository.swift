@@ -208,9 +208,14 @@ final class ClipRepository: Sendable {
     /// belongs to a clip that no longer exists.
     func liveKeys() throws -> (blobs: Set<String>, thumbnails: Set<String>) {
         try database.writer.read { db in
-            let blobs = try String.fetchSet(
-                db, sql: "SELECT DISTINCT blob_key FROM clip WHERE blob_key IS NOT NULL"
-            )
+            // Every blob-bearing column, not just `blob_key`. A format added to
+            // the schema and forgotten here would have its files collected out
+            // from under the clips still using them.
+            let blobs = try String.fetchSet(db, sql: """
+                SELECT blob_key FROM clip WHERE blob_key IS NOT NULL
+                UNION SELECT rtf_key FROM clip WHERE rtf_key IS NOT NULL
+                UNION SELECT html_key FROM clip WHERE html_key IS NOT NULL
+                """)
             let thumbnails = try String.fetchSet(
                 db, sql: "SELECT DISTINCT thumb_key FROM clip WHERE thumb_key IS NOT NULL"
             )

@@ -121,6 +121,18 @@ final class AppDatabase: Sendable {
             }
         }
 
+        // Text copied out of a rich editor arrives in several formats at once.
+        // Keeping only the plain string means every round trip through the
+        // clipboard silently strips formatting, which is what the app this
+        // replaces did. Both alternates are blob keys rather than columns:
+        // a copied web page's HTML is regularly larger than the text it wraps.
+        migrator.registerMigration("v2.richText") { db in
+            try db.alter(table: "clip") { t in
+                t.add(column: "rtf_key", .text)
+                t.add(column: "html_key", .text)
+            }
+        }
+
         return migrator
     }
 }

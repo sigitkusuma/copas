@@ -63,18 +63,10 @@ final class ThumbnailStore: @unchecked Sendable {
 
         // Transparency has to survive: cards draw thumbnails over a checkerboard
         // so an image with alpha reads as transparent rather than as white. JPEG
-        // would flatten that, so anything with an alpha channel is kept as PNG and
-        // only opaque images take the smaller encoding.
-        let hasAlpha: Bool
-        switch thumbnail.alphaInfo {
-        case .none, .noneSkipFirst, .noneSkipLast:
-            hasAlpha = false
-        default:
-            hasAlpha = true
-        }
-
-        let type = hasAlpha ? UTType.png : UTType.jpeg
-        let filename = key + (hasAlpha ? ".png" : ".jpg")
+        // would flatten that, so anything genuinely transparent is kept as PNG.
+        let transparent = Self.hasVisibleTransparency(thumbnail)
+        let type = transparent ? UTType.png : UTType.jpeg
+        let filename = key + (transparent ? ".png" : ".jpg")
 
         let encoded = NSMutableData()
         guard let destination = CGImageDestinationCreateWithData(
@@ -94,6 +86,52 @@ final class ThumbnailStore: @unchecked Sendable {
 
         try directory.write(encoded as Data, filename: filename)
         return filename
+    }
+
+    /// Whether any pixel is actually see-through.
+    ///
+    /// Having an alpha channel is not the same as using one, and almost every
+    /// real screenshot has a channel that is opaque from corner to corner —
+    /// `NSImage.lockFocus` and macOS's own screen capture both produce RGBA.
+    /// Deciding on the channel alone sends nearly every image down the larger
+    /// encoding, so this reads the pixels and returns at the first one that is
+    /// not fully opaque. It is a decode of the *thumbnail*, not the original, and
+    /// it happens once per image clip, off the main thread.
+    static func hasVisibleTransparency(_ image: CGImage) -> Bool {
+        switch image.alphaInfo {
+        case .none, .noneSkipFirst, .noneSkipLast:
+            return false
+        default:
+            break
+        }
+
+        let width = image.width
+        let height = image.height
+        guard width > 0, height > 0 else { return false }
+
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        return pixels.withUnsafeMutableBytes { buffer in
+            guard
+                let base = buffer.baseAddress,
+                let context = CGContext(
+                    data: base,
+                    width: width,
+                    height: height,
+                    bitsPerComponent: 8,
+                    bytesPerRow: width * 4,
+                    space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+                )
+            else {
+                // Could not look, so assume the worst: PNG is the lossless,
+                // transparency-preserving answer and only costs bytes.
+                return true
+            }
+
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            let bytes = buffer.bindMemory(to: UInt8.self)
+            return stride(from: 3, to: bytes.count, by: 4).contains { bytes[$0] < 255 }
+        }
     }
 
     /// The pixel dimensions of image data, read from its header alone.
