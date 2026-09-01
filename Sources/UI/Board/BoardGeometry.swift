@@ -6,19 +6,38 @@ import Foundation
 /// checked without a window server — the interesting cases are all about screens
 /// that are smaller, taller or positioned differently than the one being
 /// developed on.
+/// Which edge the board is anchored to.
+///
+/// A setting in waiting: the geometry is written for both so Settings can offer
+/// the choice without any of this changing.
+enum BoardEdge: String, Sendable, CaseIterable {
+    case top
+    case bottom
+}
+
 enum BoardGeometry {
 
-    /// Anchored to the bottom edge, spanning the full width.
+    /// Anchored to one edge, spanning the full width.
     ///
-    /// Measured against the screen's *visible* frame, so the board rests on top
-    /// of the Dock rather than underneath it, and never taller than the space
-    /// there is.
-    static func frame(in visibleFrame: CGRect, height: CGFloat = Theme.boardHeight) -> CGRect {
-        CGRect(
+    /// The top edge by default, tucked under the menu bar. That puts the board
+    /// where the status item that opens it already is, and where the eye is
+    /// already looking after a keystroke — a strip at the bottom means the
+    /// pointer and the attention start at opposite ends of the screen.
+    ///
+    /// Measured against the screen's *visible* frame, so the board clears the
+    /// menu bar at the top and rests on the Dock at the bottom, and is never
+    /// taller than the space there is.
+    static func frame(
+        in visibleFrame: CGRect,
+        edge: BoardEdge = .top,
+        height: CGFloat = Theme.boardHeight
+    ) -> CGRect {
+        let height = min(height, visibleFrame.height)
+        return CGRect(
             x: visibleFrame.minX,
-            y: visibleFrame.minY,
+            y: edge == .top ? visibleFrame.maxY - height : visibleFrame.minY,
             width: visibleFrame.width,
-            height: min(height, visibleFrame.height)
+            height: height
         )
     }
 

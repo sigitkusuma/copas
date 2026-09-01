@@ -62,6 +62,9 @@ enum Theme {
     /// Retina without decoding the full image.
     static let thumbnailMaxPixel: CGFloat = cardWidth * 2
 
+    /// The pinned day rail down the leading edge of the strip.
+    static let dayRailWidth: CGFloat = 24
+
     /// The row of key hints along the bottom edge.
     static let hintBarHeight: CGFloat = 26
 

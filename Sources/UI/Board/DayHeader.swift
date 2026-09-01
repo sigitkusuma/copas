@@ -16,7 +16,7 @@ struct DayHeader: View {
             .foregroundStyle(.secondary)
             .fixedSize()
             .rotationEffect(.degrees(-90))
-            .frame(width: 24, height: Theme.cardHeight)
+            .frame(width: Theme.dayRailWidth, height: Theme.cardHeight)
             .background(
                 // Opaque, or cards scroll visibly underneath the pinned rail.
                 Rectangle()

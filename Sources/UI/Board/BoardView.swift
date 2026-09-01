@@ -30,7 +30,9 @@ struct BoardView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay(alignment: .top) {
+        // The hairline goes on the edge facing the rest of the screen, which for
+        // a board hanging from the menu bar is the bottom one.
+        .overlay(alignment: .bottom) {
             Rectangle().fill(Theme.ruleStrong).frame(height: 1)
         }
         .animation(Theme.Motion.contentIn, value: model.previewedID)
@@ -71,6 +73,10 @@ struct BoardView: View {
             .scrollTargetLayout()
         }
         .scrollPosition(id: $model.scrollAnchorID)
+        // Scrolling to a card aligns it with the leading edge — which is exactly
+        // where the pinned day rail sits. Without this inset, every card the
+        // keyboard moves to arrives half-hidden behind the rail.
+        .contentMargins(.leading, Theme.dayRailWidth, for: .scrollContent)
         .scrollIndicators(.never)
     }
 
