@@ -3,19 +3,29 @@ import Testing
 
 @testable import Copas
 
+/// Serialized, and sharing one defaults suite.
+///
+/// A suite per test needs a unique name, and `UserDefaults` leaves an empty
+/// plist in ~/Library/Preferences for every name it has ever seen — nothing
+/// reaps them, and eighty-five had piled up before anyone went looking. One
+/// suite, cleared either side of each test, leaves exactly one empty file
+/// however many times this runs.
 @MainActor
+@Suite(.serialized)
 final class PreferencesTests {
 
-    let suiteName: String
+    static let suiteName = "com.sigitkusuma.copas.tests"
     let defaults: UserDefaults
 
     init() throws {
-        suiteName = "com.sigitkusuma.copas.tests.\(UUID().uuidString)"
-        defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults = try #require(UserDefaults(suiteName: Self.suiteName))
+        // Cleared going in as well as coming out, so a crashed run cannot leave
+        // the next one reading somebody else's settings.
+        defaults.removePersistentDomain(forName: Self.suiteName)
     }
 
     deinit {
-        UserDefaults.standard.removePersistentDomain(forName: suiteName)
+        defaults.removePersistentDomain(forName: Self.suiteName)
     }
 
     private func make() -> Preferences {
