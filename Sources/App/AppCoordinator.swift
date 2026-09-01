@@ -30,6 +30,9 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
     // The board.
     private var board: BoardWindowController?
 
+    // Capture to text.
+    private let regionCapture = RegionCapture()
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         openStore()
         startCapturing()
@@ -112,6 +115,7 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
 
         let monitor = PasteboardMonitor()
         let ingestor = ClipIngestor(clips: clips, blobs: blobs, thumbnails: thumbnails)
+        let recognition = ClipTextRecognition(clips: clips, blobs: blobs)
 
         // Detached, so the loop runs off the main thread. Ingesting hashes,
         // encodes a thumbnail and writes to disk — all of it work the monitor
@@ -120,7 +124,13 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         captureTask = Task.detached(priority: .utility) {
             for await payload in payloads {
                 do {
-                    try ingestor.ingest(payload)
+                    guard let outcome = try ingestor.ingest(payload) else { continue }
+
+                    // Only for pictures the history has not seen before: copying
+                    // the same screenshot twice should not read it twice.
+                    if outcome.isNew, outcome.record.kind == .image {
+                        await recognition.recognize(outcome.record)
+                    }
                 } catch {
                     Log.store.error("could not store a clip: \(error, privacy: .public)")
                 }
@@ -145,6 +155,10 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             self?.toggleBoard()
         }
 
+        hotkeys.register(.captureToText, combination: .captureToText) { [weak self] in
+            self?.captureToText()
+        }
+
         // Carbon refuses a combination another running app already holds. The
         // likeliest cause by far is the app this replaces still running, and
         // saying so beats leaving a shortcut that does nothing.
@@ -164,6 +178,53 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             return
         }
         board.toggle()
+    }
+
+    // MARK: - Capture to text
+
+    /// Drag out a region of the screen and get its text on the clipboard.
+    ///
+    /// The image never reaches the clipboard when there is text in it — the point
+    /// is to skip the retyping, not to collect screenshots. The write is
+    /// deliberately *not* suppressed, so the recognised text lands in history
+    /// like anything else copied.
+    private func captureToText() {
+        guard RegionCapture.requestPermission() else { return }
+
+        Task { @MainActor in
+            switch await regionCapture.selectRegion() {
+            case .cancelled:
+                // Escape. A normal way to change your mind, not a failure.
+                return
+            case .failed:
+                CaptureHUD.shared.show("Capture failed", symbol: "exclamationmark.triangle")
+            case .captured(let data):
+                await finish(capture: data)
+            }
+        }
+    }
+
+    private func finish(capture data: Data) async {
+        guard let image = ClipTextRecognition.decode(data) else {
+            CaptureHUD.shared.show("Capture failed", symbol: "exclamationmark.triangle")
+            return
+        }
+
+        let text = (await TextRecognizer.recognizeText(in: image))?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+
+        if text.isEmpty {
+            // Never throw away what the user just took the trouble to select.
+            // A picture they have to read themselves beats nothing at all.
+            pasteboard.setData(data, forType: .png)
+            CaptureHUD.shared.show("No text — image copied", symbol: "photo")
+        } else {
+            pasteboard.setString(text, forType: .string)
+            CaptureHUD.shared.show("Text copied", symbol: "text.viewfinder")
+        }
     }
 
     private func openSettings() {
