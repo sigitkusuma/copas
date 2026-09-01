@@ -5,8 +5,6 @@
 A clipboard manager for macOS. Everything you copy, kept, searchable, and one
 keystroke away.
 
-![The Copas board: a strip of clipboard cards under the menu bar](docs/board.png)
-
 Copas lives in the menu bar. Press **⇧⌘V** and a strip of cards drops down from
 under the menu bar showing what you have copied, newest first, grouped by day.
 Arrow to one, press Return, and it pastes into whatever you were just typing in.
