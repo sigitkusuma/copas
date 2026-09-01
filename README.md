@@ -1,3 +1,5 @@
+<img src="docs/logo.png" alt="" width="88">
+
 # Copas
 
 A clipboard manager for macOS. Everything you copy, kept, searchable, and one

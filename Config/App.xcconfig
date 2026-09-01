@@ -33,4 +33,9 @@ CODE_SIGN_ENTITLEMENTS = Config/Copas.entitlements
 
 SWIFT_STRICT_CONCURRENCY = complete
 
+// The app icon lives in Resources/Assets.xcassets and is drawn, not hand-made:
+// Scripts/generate_icon.swift is the source of truth for the mark.
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
+ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO
+
 INFOPLIST_FILE = Config/Info.plist

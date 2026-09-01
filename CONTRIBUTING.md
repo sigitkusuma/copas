@@ -61,6 +61,22 @@ Match what is around you. A few things that are deliberate rather than accidenta
 - British spelling in prose, American in API names that mirror Apple's.
 - No abbreviations in names. `combination`, not `combo`.
 
+## The icon
+
+The mark — a capture viewfinder around two lines of text — is drawn in code
+rather than kept as a binary nobody can edit. `Scripts/generate_icon.swift` is
+the source of truth; it writes every slot in `Resources/Assets.xcassets` plus
+the `docs/logo.png` the README shows.
+
+```bash
+swift Scripts/generate_icon.swift
+```
+
+It draws two variants. Above 32pt the mark carries both text bars; at and below
+32pt they blur into each other, so the compact art drops to one bar and
+thickens every stroke. The variant is picked by the slot's *point* size, so
+16pt@2x uses the same art as 16pt@1x.
+
 ## Releases
 
 `Scripts/release.sh` builds, signs, notarises, staples, publishes and updates the
