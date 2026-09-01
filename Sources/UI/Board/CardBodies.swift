@@ -5,10 +5,14 @@ import SwiftUI
 struct TextCardBody: View {
 
     let text: String
+    let terms: [String]
     let isMonospaced: Bool
 
     var body: some View {
-        Text(text)
+        // Built here rather than in the card model, so the highlighting runs for
+        // the handful of cards actually on screen instead of all five hundred
+        // on every keystroke.
+        Text(SearchHighlight.attributed(text, terms: terms))
             .font(.system(size: 12, design: isMonospaced ? .monospaced : .default))
             .lineSpacing(2)
             .foregroundStyle(.primary)
@@ -35,7 +39,8 @@ struct TextCardBody: View {
 struct ImageCardBody: View {
 
     let thumbnail: NSImage?
-    let recognizedText: String?
+    let caption: String?
+    let terms: [String]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -56,8 +61,8 @@ struct ImageCardBody: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipped()
 
-            if let recognizedText, !recognizedText.isEmpty {
-                Text(recognizedText)
+            if let caption, !caption.isEmpty {
+                Text(SearchHighlight.attributed(caption, terms: terms))
                     .font(.system(size: 10.5))
                     .foregroundStyle(.secondary)
                     .lineLimit(2)

@@ -31,10 +31,38 @@ final class BoardModel {
     /// mean dragging the strip silently moved the selection.
     var scrollAnchorID: String?
 
-    /// The card shown large, or `nil`. Space toggles it.
+    /// The card shown large, or `nil`.
     private(set) var previewedID: String?
 
+    /// What the user has typed. Writing to it schedules a search; the query is
+    /// not run on every keystroke.
+    var searchText = "" {
+        didSet {
+            guard searchText != oldValue else { return }
+            scheduleSearch()
+        }
+    }
+
+    /// How many clips the current search matches, across the whole history
+    /// rather than the loaded page.
+    private(set) var resultCount = 0
+
+    private(set) var query = SearchQuery("")
+
+    /// Bumped every time the board opens.
+    ///
+    /// The panel is hidden and shown rather than rebuilt, so SwiftUI's `onAppear`
+    /// fires exactly once in the app's lifetime. Views that need to reset on each
+    /// opening — the caret in the search field — watch this instead.
+    private(set) var isVisibleGeneration = 0
+
+    var isSearching: Bool { !query.isEmpty }
+
     var isEmpty: Bool { isLoaded && sections.isEmpty }
+
+    /// "Nothing copied yet" and "nothing matched" are different states and need
+    /// to say different things — one is a new install, the other is a typo.
+    var hasNoResults: Bool { isEmpty && isSearching }
 
     // MARK: - Collaborators
 
@@ -44,6 +72,11 @@ final class BoardModel {
     @ObservationIgnored private var now = Date()
     @ObservationIgnored private var observationTask: Task<Void, Never>?
     @ObservationIgnored private var clockTask: Task<Void, Never>?
+    @ObservationIgnored private var searchTask: Task<Void, Never>?
+
+    /// Long enough that a fast typist runs one query rather than eight, short
+    /// enough that the board never feels like it is lagging behind the keyboard.
+    static let searchDebounce = Duration.milliseconds(120)
 
     /// Handed a clip and whether to press ⌘V for it. The model does not know
     /// which app had focus before the board opened, and should not.
@@ -72,24 +105,16 @@ final class BoardModel {
         // wherever it was left five minutes ago means the very first Return
         // pastes something the user was not looking at.
         focusedID = nil
+        searchText = ""
+        query = SearchQuery("")
+        isVisibleGeneration += 1
 
         // Synchronously first, so the board paints with content on the frame it
         // appears rather than flashing an empty strip and filling in a beat
         // later. The observation below only ever *changes* what is already there.
         reload()
 
-        if observationTask == nil {
-            let observation = clips.observePage(limit: Self.pageLimit)
-            observationTask = Task { [weak self] in
-                do {
-                    for try await records in observation {
-                        self?.apply(records)
-                    }
-                } catch {
-                    Log.store.error("the clip feed stopped: \(error, privacy: .public)")
-                }
-            }
-        }
+        observe()
 
         clockTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -102,7 +127,7 @@ final class BoardModel {
     /// One synchronous fetch. Cheap — an indexed query with a limit.
     func reload() {
         do {
-            apply(try clips.page(limit: Self.pageLimit))
+            apply(try clips.page(matching: query.compiled(), limit: Self.pageLimit))
         } catch {
             Log.store.error("could not read clips: \(error, privacy: .public)")
         }
@@ -111,13 +136,68 @@ final class BoardModel {
     func stop() {
         clockTask?.cancel()
         clockTask = nil
+        searchTask?.cancel()
+        searchTask = nil
+        observationTask?.cancel()
+        observationTask = nil
         previewedID = nil
+    }
+
+    /// Watches the clips this query matches. Restarted when the query changes,
+    /// because an observation is bound to the question it was asked.
+    private func observe() {
+        observationTask?.cancel()
+        let observation = clips.observePage(matching: query.compiled(), limit: Self.pageLimit)
+        observationTask = Task { [weak self] in
+            do {
+                for try await records in observation {
+                    self?.apply(records)
+                }
+            } catch {
+                Log.store.error("the clip feed stopped: \(error, privacy: .public)")
+            }
+        }
+    }
+
+    // MARK: - Search
+
+    private func scheduleSearch() {
+        searchTask?.cancel()
+        searchTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.searchDebounce)
+            guard !Task.isCancelled else { return }
+            self?.runSearch()
+        }
+    }
+
+    /// Runs the current text immediately. The debounce above is about typing
+    /// speed, not about correctness, so tests and Escape both go straight here.
+    func runSearch() {
+        let parsed = SearchQuery(searchText)
+        guard parsed != query else { return }
+        query = parsed
+
+        // The old focus belongs to a result set that no longer exists.
+        focusedID = nil
+        reload()
+        observe()
+    }
+
+    /// Escape's first job. Returns false when there was nothing to clear.
+    @discardableResult
+    func clearSearch() -> Bool {
+        guard !searchText.isEmpty else { return false }
+        searchText = ""
+        searchTask?.cancel()
+        runSearch()
+        return true
     }
 
     private func apply(_ records: [ClipRecord]) {
         self.records = records
-        sections = ClipSectionBuilder.sections(from: records, now: now)
+        sections = ClipSectionBuilder.sections(from: records, now: now, terms: query.terms)
         isLoaded = true
+        resultCount = (try? clips.count(matching: query.compiled())) ?? records.count
 
         AppIconCache.shared.prewarm(records.compactMap(\.sourceBundleID))
 
@@ -282,11 +362,13 @@ final class BoardModel {
         previewedID = previewedID == nil ? focusedID : nil
     }
 
-    /// Escape closes the preview if one is open, and the board otherwise — one
-    /// key that always means "back", never "quit out of two things at once".
+    /// One key that always means "back", and only ever undoes one thing at a
+    /// time: the preview, then the search, then the board itself.
     func escape() {
         if previewedID != nil {
             previewedID = nil
+        } else if clearSearch() {
+            return
         } else {
             onDismiss?()
         }

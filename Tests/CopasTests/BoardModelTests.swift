@@ -241,6 +241,97 @@ final class BoardModelTests {
         #expect(model.isEmpty)
     }
 
+    // MARK: - Search
+
+    @Test func searchingNarrowsTheBoardAndCountsTheMatches() throws {
+        try insert(["invoice april", "receipt march", "invoice may"])
+        model.start()
+
+        model.searchText = "invoice"
+        model.runSearch()
+
+        #expect(model.cards.map(\.preview) == ["invoice april", "invoice may"])
+        #expect(model.resultCount == 2)
+        #expect(model.isSearching)
+        model.stop()
+    }
+
+    /// The old focus belongs to a result set that no longer exists.
+    @Test func searchingMovesFocusToTheFirstMatch() throws {
+        try insert(["alpha", "beta", "gamma"])
+        model.start()
+        model.focusLast()
+
+        model.searchText = "beta"
+        model.runSearch()
+
+        #expect(model.focusedCard?.preview == "beta")
+        model.stop()
+    }
+
+    @Test func aSearchThatMatchesNothingSaysSoDistinctly() throws {
+        try insert(["alpha"])
+        model.start()
+
+        model.searchText = "nothing like this"
+        model.runSearch()
+
+        #expect(model.isEmpty)
+        #expect(model.hasNoResults, "a typo on a full history must not read as an empty history")
+        model.stop()
+    }
+
+    @Test func anEmptyHistoryIsNotAFailedSearch() throws {
+        model.start()
+        #expect(model.isEmpty)
+        #expect(!model.hasNoResults)
+        model.stop()
+    }
+
+    @Test func filterTokensAreNotAlsoSearchedAsText() throws {
+        try insert(["a note about xcode"])
+        model.start()
+
+        model.searchText = "app:xcode"
+        model.runSearch()
+
+        // Copied from the test harness, not from Xcode, so the filter excludes it
+        // — and "xcode" must not leak into the text search and match it anyway.
+        #expect(model.cards.isEmpty)
+        model.stop()
+    }
+
+    @Test func clearingTheSearchBringsEverythingBack() throws {
+        try insert(["alpha", "beta"])
+        model.start()
+        model.searchText = "alpha"
+        model.runSearch()
+
+        #expect(model.clearSearch())
+        #expect(model.cards.count == 2)
+        #expect(!model.isSearching)
+        model.stop()
+    }
+
+    @Test func clearingWithNothingTypedReportsThatItDidNothing() throws {
+        model.start()
+        #expect(!model.clearSearch())
+        model.stop()
+    }
+
+    @Test func reopeningTheBoardStartsWithAnEmptySearch() throws {
+        try insert(["alpha", "beta"])
+        model.start()
+        model.searchText = "alpha"
+        model.runSearch()
+        model.stop()
+
+        model.start()
+        #expect(model.searchText.isEmpty)
+        #expect(model.cards.count == 2)
+        model.stop()
+    }
+
     // MARK: - Preview and escape
 
     @Test func spaceOpensAndClosesTheLargePreview() throws {
@@ -254,21 +345,31 @@ final class BoardModelTests {
         #expect(model.previewedCard == nil)
     }
 
-    /// One key that always means "back", never "close two things at once".
-    @Test func escapeClosesThePreviewBeforeTheBoard() throws {
-        try insert(["a"])
-        model.reload()
+    /// One key that always means "back", and only ever undoes one thing at a
+    /// time: the preview, then the search, then the board.
+    @Test func escapeUndoesOneThingAtATime() throws {
+        try insert(["alpha"])
+        model.start()
+        model.searchText = "alpha"
+        model.runSearch()
 
         var dismissed = false
         model.onDismiss = { dismissed = true }
 
         model.togglePreview()
+
         model.escape()
         #expect(model.previewedCard == nil)
-        #expect(!dismissed, "the first escape closes the preview only")
+        #expect(model.isSearching, "the first escape closes the preview only")
+        #expect(!dismissed)
+
+        model.escape()
+        #expect(!model.isSearching, "the second clears the search")
+        #expect(!dismissed)
 
         model.escape()
         #expect(dismissed)
+        model.stop()
     }
 
     @Test func deletingTheClipBeingPreviewedClosesThePreview() throws {

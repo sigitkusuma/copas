@@ -25,6 +25,17 @@ struct ClipCardModel: Identifiable, Equatable, Sendable {
     let pixelHeight: Int?
     let isMonospaced: Bool
 
+    /// What the card actually draws, which is not always the preview — see the
+    /// initialiser.
+    let displayText: String
+    /// The recognised-text caption under an image, excerpted around the match
+    /// when there is one.
+    let recognizedCaption: String?
+    /// Why this clip is in the results, when the reason is not the preview.
+    let matchSource: MatchSource
+    /// The words to mark in ``displayText`` and ``recognizedCaption``.
+    let terms: [String]
+
     /// Formatted by the board's shared clock, not by the card.
     ///
     /// A card that formatted its own would have to observe the clock, and then
@@ -33,7 +44,16 @@ struct ClipCardModel: Identifiable, Equatable, Sendable {
     /// a minute in, is none of them.
     var timestamp: String
 
-    init(_ record: ClipRecord, now: Date) {
+    /// Where a search found this clip, when the card would not otherwise show it.
+    enum MatchSource: Equatable, Sendable {
+        case none
+        /// Past the 240 characters the preview holds.
+        case body
+        /// Inside the text read out of a picture.
+        case recognizedText
+    }
+
+    init(_ record: ClipRecord, now: Date, terms: [String] = []) {
         id = record.id
         kind = record.kind
         preview = record.preview
@@ -49,6 +69,38 @@ struct ClipCardModel: Identifiable, Equatable, Sendable {
         pixelHeight = record.pixelHeight
         isMonospaced = record.kind == .text && CodeHeuristic.looksLikeCode(record.preview)
         timestamp = RelativeTime.string(for: record.createdDate, relativeTo: now)
+        self.terms = terms
+
+        // A search can find a clip somewhere the card is not showing: past the
+        // 240 characters of the preview, or inside text read out of a picture.
+        // Leaving the card as it was returns a result with no visible reason to
+        // be there, which reads as the search being wrong.
+        if terms.isEmpty || SearchHighlight.matches(terms, in: record.preview) {
+            matchSource = .none
+            displayText = record.preview
+        } else if
+            let inline = record.inlineText,
+            let excerpt = SearchHighlight.excerpt(from: inline, matching: terms)
+        {
+            matchSource = .body
+            displayText = excerpt
+        } else if
+            let recognized = record.recognizedText,
+            SearchHighlight.matches(terms, in: recognized)
+        {
+            matchSource = .recognizedText
+            displayText = record.preview
+        } else {
+            matchSource = .none
+            displayText = record.preview
+        }
+
+        if let recognized = record.recognizedText, !recognized.isEmpty {
+            recognizedCaption = SearchHighlight.excerpt(from: recognized, matching: terms)
+                ?? String(recognized.prefix(180))
+        } else {
+            recognizedCaption = nil
+        }
     }
 
     var hasRecognizedText: Bool {
@@ -94,6 +146,7 @@ enum ClipSectionBuilder {
     static func sections(
         from records: [ClipRecord],
         now: Date,
+        terms: [String] = [],
         calendar: Calendar = .current
     ) -> [ClipSection] {
         var sections: [ClipSection] = []
@@ -110,7 +163,7 @@ enum ClipSectionBuilder {
                     cards: []
                 ))
             }
-            sections[sections.count - 1].cards.append(ClipCardModel(record, now: now))
+            sections[sections.count - 1].cards.append(ClipCardModel(record, now: now, terms: terms))
         }
 
         return sections

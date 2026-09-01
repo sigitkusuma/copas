@@ -62,6 +62,9 @@ enum Theme {
     /// Retina without decoding the full image.
     static let thumbnailMaxPixel: CGFloat = cardWidth * 2
 
+    /// The search field along the top edge.
+    static let searchBarHeight: CGFloat = 32
+
     /// The pinned day rail down the leading edge of the strip.
     static let dayRailWidth: CGFloat = 24
 
@@ -71,7 +74,7 @@ enum Theme {
     /// Derived, not chosen. A height picked independently of the card it holds
     /// drifts the moment either changes, and the slack shows up as a band of
     /// empty panel under the cards.
-    static let boardHeight: CGFloat = gutter + cardHeight + 12 + hintBarHeight
+    static let boardHeight: CGFloat = searchBarHeight + gutter + cardHeight + 12 + hintBarHeight
     static let controlRadius: CGFloat = 0
     static let chipRadius: CGFloat = 2
     static let focusRingWidth: CGFloat = 2

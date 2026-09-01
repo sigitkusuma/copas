@@ -213,6 +213,67 @@ struct ClipRepositoryTests {
         #expect(try repository.page(matching: safariOnly, limit: 10).map(\.preview) == ["note"])
     }
 
+    /// The payoff for indexing the whole clip and not just its preview: the
+    /// clips worth searching for are the long ones you cannot skim past.
+    @Test func textBeyondThePreviewIsStillFindable() throws {
+        let long = String(repeating: "boilerplate ", count: 60) + "pomegranate"
+        let record = ClipRecord.text(long, at: at(0)) { _ in "" }
+
+        #expect(!record.preview.contains("pomegranate"), "the word must be past the preview")
+        _ = try repository.insert(record)
+
+        #expect(try repository.page(matching: .text("pomegranate"), limit: 10).count == 1)
+    }
+
+    @Test func searchIsScopedByAppNameOrBundleIdentifier() throws {
+        _ = try repository.insert(
+            text("a", at: at(0), source: SourceApp(bundleID: "com.apple.dt.Xcode", name: "Xcode"))
+        )
+        _ = try repository.insert(
+            text("b", at: at(60), source: SourceApp(bundleID: "com.google.Chrome", name: "Google Chrome"))
+        )
+
+        // Nobody types a bundle identifier, but nobody should have to know that.
+        #expect(try repository.page(matching: ClipQuery(appFragment: "xcode"), limit: 10).count == 1)
+        #expect(try repository.page(matching: ClipQuery(appFragment: "chrome"), limit: 10).count == 1)
+        #expect(try repository.page(matching: ClipQuery(appFragment: "com.apple"), limit: 10).count == 1)
+        #expect(try repository.page(matching: ClipQuery(appFragment: "safari"), limit: 10).isEmpty)
+    }
+
+    /// `%` is a wildcard to LIKE and an ordinary character to a person. Unescaped,
+    /// searching for it would match every clip in the history.
+    @Test func aWildcardInAnAppSearchIsMatchedLiterally() throws {
+        _ = try repository.insert(
+            text("a", at: at(0), source: SourceApp(bundleID: "com.example.app", name: "Discount 50%"))
+        )
+        _ = try repository.insert(
+            text("b", at: at(60), source: SourceApp(bundleID: "com.apple.Safari", name: "Safari"))
+        )
+
+        #expect(try repository.page(matching: ClipQuery(appFragment: "%"), limit: 10).count == 1)
+        #expect(try repository.page(matching: ClipQuery(appFragment: "_afari"), limit: 10).isEmpty)
+    }
+
+    @Test func recognizedTextCanBeRequired() throws {
+        _ = try repository.insert(text("plain", at: at(0)))
+        let picture = image(seed: "shot", at: at(60))
+        _ = try repository.insert(picture)
+
+        let withText = ClipQuery(requiresRecognizedText: true)
+        #expect(try repository.page(matching: withText, limit: 10).isEmpty)
+
+        _ = try repository.setRecognizedText("Invoice 4471", for: picture.id)
+        #expect(try repository.page(matching: withText, limit: 10).map(\.id) == [picture.id])
+    }
+
+    @Test func emptyRecognizedTextDoesNotCountAsHavingAny() throws {
+        let picture = image(seed: "shot", at: at(0))
+        _ = try repository.insert(picture)
+        _ = try repository.setRecognizedText("", for: picture.id)
+
+        #expect(try repository.page(matching: ClipQuery(requiresRecognizedText: true), limit: 10).isEmpty)
+    }
+
     // MARK: - Retention
 
     @Test func pruneKeepsTheNewestClipsUpToTheLimit() throws {

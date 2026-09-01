@@ -15,12 +15,30 @@ struct ClipQuery: Equatable, Sendable {
     var kinds: Set<ClipKind>
 
     /// Restricts to clips copied from these bundle identifiers. Empty means "any".
+    ///
+    /// Exact, for filters the app sets itself. What a person *types* goes in
+    /// ``appFragment`` instead — nobody types a bundle identifier.
     var bundleIDs: Set<String>
 
-    init(match: String? = nil, kinds: Set<ClipKind> = [], bundleIDs: Set<String> = []) {
+    /// A case-insensitive fragment matched against the app's display name or its
+    /// bundle identifier, whichever the user happened to have in mind.
+    var appFragment: String?
+
+    /// Only clips carrying recognised text.
+    var requiresRecognizedText: Bool
+
+    init(
+        match: String? = nil,
+        kinds: Set<ClipKind> = [],
+        bundleIDs: Set<String> = [],
+        appFragment: String? = nil,
+        requiresRecognizedText: Bool = false
+    ) {
         self.match = match
         self.kinds = kinds
         self.bundleIDs = bundleIDs
+        self.appFragment = appFragment
+        self.requiresRecognizedText = requiresRecognizedText
     }
 
     static let all = ClipQuery()
@@ -32,6 +50,7 @@ struct ClipQuery: Equatable, Sendable {
 
     var isUnfiltered: Bool {
         match == nil && kinds.isEmpty && bundleIDs.isEmpty
+            && appFragment == nil && !requiresRecognizedText
     }
 
     /// Turns typed text into a safe FTS5 expression.
@@ -47,10 +66,13 @@ struct ClipQuery: Equatable, Sendable {
     /// the search being wrong; prefixing the last one is what makes typing feel
     /// live.
     static func matchExpression(for input: String) -> String? {
-        let tokens = input
-            .split(whereSeparator: \.isWhitespace)
-            .map(String.init)
-            .filter { token in token.contains(where: { $0.isLetter || $0.isNumber }) }
+        matchExpression(forTerms: input.split(whereSeparator: \.isWhitespace).map(String.init))
+    }
+
+    /// The same rules, applied to terms a grammar has already separated from its
+    /// filter tokens — so `app:xcode` is never also searched for as text.
+    static func matchExpression(forTerms terms: [String]) -> String? {
+        let tokens = terms.filter { token in token.contains(where: { $0.isLetter || $0.isNumber }) }
 
         guard !tokens.isEmpty else { return nil }
 

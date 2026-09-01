@@ -61,6 +61,64 @@ struct ClipCardModelTests {
         #expect(!ClipCardModel(text("Remember to buy milk on the way home"), now: Self.now).isMonospaced)
     }
 
+    // MARK: - Showing where a search matched
+
+    @Test func withNoSearchTheCardShowsItsPreview() {
+        let card = ClipCardModel(text("hello there"), now: Self.now)
+        #expect(card.displayText == "hello there")
+        #expect(card.matchSource == .none)
+    }
+
+    @Test func aMatchInsideThePreviewNeedsNoExcerpt() {
+        let card = ClipCardModel(text("invoice for april"), now: Self.now, terms: ["invoice"])
+        #expect(card.displayText == "invoice for april")
+        #expect(card.matchSource == .none)
+    }
+
+    /// A search can find a clip past the 240 characters the preview holds.
+    /// Leaving the card as it was returns a result with no visible reason to be
+    /// there, which reads as the search being wrong.
+    @Test func aMatchPastThePreviewIsExcerptedFromTheBody() {
+        let long = String(repeating: "boilerplate ", count: 60) + "pomegranate jam"
+        let card = ClipCardModel(text(long), now: Self.now, terms: ["pomegranate"])
+
+        #expect(card.matchSource == .body)
+        #expect(card.displayText.contains("pomegranate"))
+        #expect(card.displayText != card.preview)
+    }
+
+    @Test func aMatchOnlyInRecognizedTextIsMarkedAsSuch() {
+        var record = ClipRecord.image(
+            blobKey: ContentHash.hex(of: "i"),
+            thumbKey: nil,
+            contentHash: ContentHash.hex(of: "i"),
+            byteSize: 10,
+            pixelWidth: 10,
+            pixelHeight: 10,
+            at: Self.now
+        )
+        record.recognizedText = "Invoice 4471 — total due on the 14th"
+
+        let card = ClipCardModel(record, now: Self.now, terms: ["invoice"])
+        #expect(card.matchSource == .recognizedText)
+        #expect(card.recognizedCaption?.contains("Invoice") == true)
+    }
+
+    @Test func aRecognizedCaptionIsShownEvenWithoutASearch() {
+        var record = ClipRecord.image(
+            blobKey: ContentHash.hex(of: "i"),
+            thumbKey: nil,
+            contentHash: ContentHash.hex(of: "i"),
+            byteSize: 10,
+            pixelWidth: 10,
+            pixelHeight: 10,
+            at: Self.now
+        )
+        record.recognizedText = "some words read out of a picture"
+
+        #expect(ClipCardModel(record, now: Self.now).recognizedCaption == "some words read out of a picture")
+    }
+
     /// Images never get the code treatment — their preview is empty, and a
     /// heuristic reading an empty string is a coin toss.
     @Test func imagesAreNeverMonospaced() {

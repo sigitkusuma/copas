@@ -87,11 +87,16 @@ struct ClipCard: View, @MainActor Equatable {
     private func body(for model: ClipCardModel) -> some View {
         switch model.kind {
         case .text:
-            TextCardBody(text: model.preview, isMonospaced: model.isMonospaced)
+            TextCardBody(
+                text: model.displayText,
+                terms: model.terms,
+                isMonospaced: model.isMonospaced
+            )
         case .image:
             ImageCardBody(
                 thumbnail: model.thumbnailKey.flatMap { thumbnails.cached($0) },
-                recognizedText: model.recognizedText
+                caption: model.recognizedCaption,
+                terms: model.terms
             )
         }
     }
@@ -104,6 +109,13 @@ struct ClipCard: View, @MainActor Equatable {
                 // The badge is the only thing that makes recognised text visible
                 // as a feature rather than as invisible plumbing.
                 Image(systemName: "text.viewfinder")
+                    .font(.system(size: 9))
+                    .foregroundStyle(model.matchSource == .recognizedText ? Theme.accent : Color.secondary)
+            }
+            if model.matchSource == .body {
+                // Says why this card is in the results when the match is past the
+                // part of the clip the card was already showing.
+                Image(systemName: "text.magnifyingglass")
                     .font(.system(size: 9))
                     .foregroundStyle(Theme.accent)
             }

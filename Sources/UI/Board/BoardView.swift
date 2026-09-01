@@ -9,16 +9,30 @@ struct BoardView: View {
     let thumbnails: ThumbnailStore
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             Theme.canvas
 
-            if model.isEmpty {
-                emptyState
-            } else {
-                strip
+            VStack(spacing: 0) {
+                SearchBar(model: model)
+
+                Rectangle()
+                    .fill(Theme.rule)
+                    .frame(height: 1)
+
+                ZStack {
+                    if model.hasNoResults {
+                        noResults
+                    } else if model.isEmpty {
+                        emptyState
+                    } else {
+                        strip
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
             hints
+                .frame(maxHeight: .infinity, alignment: .bottom)
 
             if let card = model.previewedCard {
                 ClipPreviewOverlay(
@@ -81,14 +95,32 @@ struct BoardView: View {
     }
 
     private var emptyState: some View {
+        message(
+            icon: "doc.on.clipboard",
+            title: "Nothing copied yet",
+            detail: "Copy something and it will appear here."
+        )
+    }
+
+    /// Distinct from the empty state on purpose. "Nothing copied yet" on a full
+    /// history because of a typo would be alarming, and offers no way out.
+    private var noResults: some View {
+        message(
+            icon: "magnifyingglass",
+            title: "No clips match",
+            detail: "Escape clears the search."
+        )
+    }
+
+    private func message(icon: String, title: String, detail: String) -> some View {
         VStack(spacing: 6) {
-            Image(systemName: "doc.on.clipboard")
+            Image(systemName: icon)
                 .font(.system(size: 26, weight: .light))
                 .foregroundStyle(.quaternary)
-            Text("Nothing copied yet")
+            Text(title)
                 .font(.system(size: Theme.titleSize))
                 .foregroundStyle(.secondary)
-            Text("Copy something and it will appear here.")
+            Text(detail)
                 .font(.system(size: Theme.metaSize))
                 .foregroundStyle(.tertiary)
         }
@@ -100,9 +132,9 @@ struct BoardView: View {
         HStack(spacing: 14) {
             hint("↩", "Paste")
             hint("⌘↩", "Copy")
-            hint("Space", "Preview")
-            hint("⌫", "Delete")
-            hint("⎋", "Close")
+            hint("⌘Y", "Preview")
+            hint("⌘⌫", "Delete")
+            hint("⎋", model.isSearching ? "Clear" : "Close")
             Spacer(minLength: 0)
         }
         .font(.system(size: Theme.metaSize))
@@ -146,14 +178,24 @@ struct BoardView: View {
             model.focusLast()
         case kVK_Return, kVK_ANSI_KeypadEnter:
             hasCommand ? model.copyWithoutPasting() : model.paste()
-        case kVK_Delete, kVK_ForwardDelete:
-            model.deleteFocused()
-        case kVK_Space:
-            model.togglePreview()
         case kVK_Escape:
             model.escape()
+
+        // Preview and delete carry a modifier because the caret lives in the
+        // search field: Space has to type a space and Delete has to delete a
+        // character, or searching for anything with a word break in it is
+        // impossible. Binding them conditionally on whether the field is empty
+        // would be worse — a key that does two different things depending on
+        // state you cannot see.
+        case kVK_ANSI_Y where hasCommand:
+            model.togglePreview()
+        case kVK_Delete where hasCommand:
+            model.deleteFocused()
+
         default:
-            // Everything else falls through, which is what keeps ⌘Q working.
+            // Everything else reaches the search field, which is what makes
+            // typing anywhere search — and what keeps ⌘Q, ⌘V and input methods
+            // working.
             return false
         }
         return true

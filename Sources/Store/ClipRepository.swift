@@ -272,6 +272,23 @@ final class ClipRepository: Sendable {
             arguments += StatementArguments(bundleIDs)
         }
 
+        // Typed, so fuzzy: "xcode" should find the app whether the user was
+        // thinking of the name or the bundle identifier. Escaped, because a
+        // search for "100%" must not turn into a wildcard that matches
+        // everything.
+        if let fragment = query.appFragment, !fragment.isEmpty {
+            conditions.append("""
+                (LOWER(clip.source_app_name) LIKE ? ESCAPE '\\' \
+                OR LOWER(clip.source_bundle_id) LIKE ? ESCAPE '\\')
+                """)
+            let pattern = "%" + escapedForLike(fragment.lowercased()) + "%"
+            arguments += [pattern, pattern]
+        }
+
+        if query.requiresRecognizedText {
+            conditions.append("clip.recognized_text IS NOT NULL AND clip.recognized_text <> ''")
+        }
+
         if let cursor {
             conditions.append("(clip.created_at < ? OR (clip.created_at = ? AND clip.id < ?))")
             arguments += [cursor.createdAt, cursor.createdAt, cursor.id]
@@ -299,6 +316,14 @@ final class ClipRepository: Sendable {
             ORDER BY clip.created_at DESC, clip.id DESC
             LIMIT ?
             """, arguments: compiled.arguments + [limit])
+    }
+
+    /// `%` and `_` are wildcards to LIKE and ordinary characters to a person.
+    private static func escapedForLike(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "%", with: "\\%")
+            .replacingOccurrences(of: "_", with: "\\_")
     }
 
     private static func placeholders(_ count: Int) -> String {

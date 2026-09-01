@@ -133,6 +133,32 @@ final class AppDatabase: Sendable {
             }
         }
 
+        // Search that only reaches the first 240 characters of a clip is search
+        // that fails on exactly the clips worth searching for — the long ones you
+        // cannot skim past. Indexing `inline_text` alongside the preview makes
+        // everything up to the 8 KB inline limit findable, which is very nearly
+        // everything. Text large enough to live in a blob still matches on its
+        // preview alone; that is the price of not reading every blob on write.
+        migrator.registerMigration("v3.searchWholeClips") { db in
+            // The synchronising triggers are named after the table they feed, so
+            // they have to go before it can be replaced.
+            try db.execute(sql: """
+                DROP TRIGGER IF EXISTS __clip_fts_ai;
+                DROP TRIGGER IF EXISTS __clip_fts_ad;
+                DROP TRIGGER IF EXISTS __clip_fts_au;
+                """)
+            try db.drop(table: "clip_fts")
+
+            try db.create(virtualTable: "clip_fts", using: FTS5()) { t in
+                t.synchronize(withTable: "clip")
+                t.column("preview")
+                t.column("inline_text")
+                t.column("recognized_text")
+                t.column("source_app_name")
+                t.prefixes = [2, 3]
+            }
+        }
+
         return migrator
     }
 }
