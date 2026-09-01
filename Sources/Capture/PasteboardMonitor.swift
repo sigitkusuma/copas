@@ -100,6 +100,15 @@ final class PasteboardMonitor {
 
         let changeCount = pasteboard.changeCount
         guard changeCount != lastChangeCount else { return nil }
+
+        // A pasteboard with no types at all is one that is being written to
+        // right now: `clearContents()` bumps the change count and the data
+        // arrives afterwards — microseconds later for a string, but a good deal
+        // longer for an app that renders an image before writing it. Advancing
+        // past that would drop the copy permanently, because the change count
+        // never comes round again. Leaving it alone costs one more poll.
+        guard pasteboard.types?.isEmpty == false else { return nil }
+
         lastChangeCount = changeCount
 
         guard changeCount > suppressedUpTo else { return nil }

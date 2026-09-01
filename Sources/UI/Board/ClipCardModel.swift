@@ -103,6 +103,42 @@ struct ClipCardModel: Identifiable, Equatable, Sendable {
         }
     }
 
+    /// What VoiceOver reads for this card.
+    ///
+    /// One sentence rather than the six separate fragments the card is built
+    /// from. Left to itself, VoiceOver walks the app name, then the timestamp,
+    /// then the snippet, then the footer as four unrelated items, which for a
+    /// strip of two hundred cards is unusable. The card is one element, and this
+    /// is what it says.
+    var accessibilityDescription: String {
+        var parts: [String] = []
+
+        switch kind {
+        case .text:
+            parts.append(displayText.isEmpty ? "Empty text clip" : displayText)
+        case .image:
+            if let pixelWidth, let pixelHeight {
+                parts.append("Image, \(pixelWidth) by \(pixelHeight) pixels")
+            } else {
+                parts.append("Image")
+            }
+            if let recognizedCaption, !recognizedCaption.isEmpty {
+                parts.append("Text in image: \(recognizedCaption)")
+            }
+        }
+
+        if let sourceName { parts.append("from \(sourceName)") }
+        parts.append(timestamp == "now" ? "just now" : "\(timestamp) ago")
+
+        switch matchSource {
+        case .body: parts.append("matched inside the clip")
+        case .recognizedText: parts.append("matched in the text of the image")
+        case .none: break
+        }
+
+        return parts.joined(separator: ", ")
+    }
+
     var hasRecognizedText: Bool {
         !(recognizedText ?? "").isEmpty
     }

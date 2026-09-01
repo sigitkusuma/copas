@@ -116,6 +116,65 @@ final class BoardModelTests {
         #expect(model.focusedCard?.preview == "b", "scrolling must not move focus")
     }
 
+    // MARK: - Paging
+
+    /// Without this the board could only ever reach the newest page: with the
+    /// default retention of 2,000 clips, three quarters of the history would be
+    /// visible in the result count and unreachable by keyboard.
+    @Test func arrowingTowardsTheEndPullsInMoreClips() throws {
+        let total = BoardModel.pageLimit + 200
+        var records: [ClipRecord] = []
+        for index in 0..<total {
+            records.append(ClipRecord.text(
+                "clip \(index)",
+                at: Self.now.addingTimeInterval(TimeInterval(-index)),
+                id: "clip-\(index)"
+            ) { _ in "" })
+        }
+        _ = try clips.importRecords(records)
+
+        model.start()
+        #expect(model.cards.count == BoardModel.pageLimit)
+        #expect(model.resultCount == total)
+
+        model.focusLast()
+        #expect(model.cards.count == total, "the rest of the history should now be reachable")
+        #expect(model.loadedLimit > BoardModel.pageLimit)
+        model.stop()
+    }
+
+    @Test func aHistoryThatFitsInOnePageNeverGrowsTheLimit() throws {
+        try insert(["a", "b", "c"])
+        model.start()
+        model.focusLast()
+
+        #expect(model.loadedLimit == BoardModel.pageLimit)
+        model.stop()
+    }
+
+    /// A new search starts from one page again, or searching a long history
+    /// after scrolling through it would fetch everything it had grown to.
+    @Test func searchingResetsHowMuchIsLoaded() throws {
+        var records: [ClipRecord] = []
+        for index in 0..<(BoardModel.pageLimit + 100) {
+            records.append(ClipRecord.text(
+                "clip \(index)",
+                at: Self.now.addingTimeInterval(TimeInterval(-index)),
+                id: "clip-\(index)"
+            ) { _ in "" })
+        }
+        _ = try clips.importRecords(records)
+
+        model.start()
+        model.focusLast()
+        #expect(model.loadedLimit > BoardModel.pageLimit)
+
+        model.searchText = "clip"
+        model.runSearch()
+        #expect(model.loadedLimit == BoardModel.pageLimit)
+        model.stop()
+    }
+
     // MARK: - Section jumps
 
     @Test func optionArrowGoesToTheStartOfTheDayBeforeLeavingIt() throws {

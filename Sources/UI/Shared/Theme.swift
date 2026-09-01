@@ -111,9 +111,13 @@ extension Theme {
         /// Reduce Motion is a positional concern, not a fade concern: Apple's
         /// guidance is to drop movement, not cross-fades. So `hover` and `press`
         /// are unchanged when it is on, and only `reorder` loses its spring.
-        private static var reduced: Bool {
+        /// Read at each use rather than cached: the setting can change while the
+        /// app is running, and a cached answer would ignore it until relaunch.
+        static var isReduced: Bool {
             NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         }
+
+        private static var reduced: Bool { isReduced }
 
         /// Row and control hover tints. Short enough to feel attached to the cursor.
         static let hover = Animation.easeOut(duration: 0.12)

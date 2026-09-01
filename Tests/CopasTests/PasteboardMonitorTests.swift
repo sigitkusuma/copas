@@ -72,6 +72,18 @@ final class PasteboardMonitorTests {
         #expect(monitor.checkForChanges()?.content == .text(RichText(plain: "copied a moment later")))
     }
 
+    /// `clearContents()` bumps the change count and the data lands afterwards —
+    /// microseconds later for a string, but a great deal longer for an app that
+    /// renders an image before writing it. A poll landing in that window used to
+    /// advance past the copy and drop it for good.
+    @Test func aPasteboardCaughtMidWriteIsReadOnTheNextPoll() {
+        pasteboard.clearContents()
+        #expect(monitor.checkForChanges() == nil, "nothing is on the pasteboard yet")
+
+        pasteboard.setString("arrived a moment later", forType: .string)
+        #expect(monitor.checkForChanges()?.content == .text(RichText(plain: "arrived a moment later")))
+    }
+
     @Test func nothingIsCapturedWhilePaused() {
         monitor.pause()
         _ = copy("while paused")

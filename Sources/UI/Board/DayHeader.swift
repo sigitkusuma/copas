@@ -17,6 +17,10 @@ struct DayHeader: View {
             .fixedSize()
             .rotationEffect(.degrees(-90))
             .frame(width: Theme.dayRailWidth, height: Theme.cardHeight)
+            // Rotated ninety degrees on screen; still just a heading to read.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(label)
+            .accessibilityAddTraits(.isHeader)
             .background(
                 // Opaque, or cards scroll visibly underneath the pinned rail.
                 Rectangle()

@@ -48,6 +48,11 @@ struct ClipCard: View, @MainActor Equatable {
                 )
         }
         .animation(Theme.Motion.selection, value: isFocused)
+        // One element, not six. See `accessibilityDescription`.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(model.accessibilityDescription)
+        .accessibilityAddTraits(isFocused ? [.isButton, .isSelected] : .isButton)
+        .accessibilityHint("Return pastes this clip")
     }
 
     // MARK: - Header

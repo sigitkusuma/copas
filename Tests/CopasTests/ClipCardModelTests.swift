@@ -61,6 +61,51 @@ struct ClipCardModelTests {
         #expect(!ClipCardModel(text("Remember to buy milk on the way home"), now: Self.now).isMonospaced)
     }
 
+    // MARK: - What VoiceOver reads
+
+    /// One sentence, not the six fragments the card is drawn from. Left to
+    /// itself VoiceOver walks each of them as an unrelated item, which for a
+    /// strip of two hundred cards is unusable.
+    @Test func aTextCardReadsAsOneSentence() {
+        let card = ClipCardModel(text("meeting notes"), now: Self.now.addingTimeInterval(120))
+        let spoken = card.accessibilityDescription
+
+        #expect(spoken.contains("meeting notes"))
+        #expect(spoken.contains("from Xcode"))
+        #expect(spoken.contains("2m ago"))
+    }
+
+    @Test func aFreshClipIsReadAsJustNowRatherThanNowAgo() {
+        let card = ClipCardModel(text("fresh"), now: Self.now)
+        #expect(card.accessibilityDescription.contains("just now"))
+        #expect(!card.accessibilityDescription.contains("now ago"))
+    }
+
+    @Test func anImageCardDescribesItselfRatherThanReadingAnEmptyPreview() {
+        var record = ClipRecord.image(
+            blobKey: ContentHash.hex(of: "i"),
+            thumbKey: nil,
+            contentHash: ContentHash.hex(of: "i"),
+            byteSize: 10,
+            pixelWidth: 1_280,
+            pixelHeight: 720,
+            at: Self.now
+        )
+        record.recognizedText = "Invoice 4471"
+
+        let spoken = ClipCardModel(record, now: Self.now).accessibilityDescription
+        #expect(spoken.contains("Image, 1280 by 720 pixels"))
+        #expect(spoken.contains("Text in image: Invoice 4471"))
+    }
+
+    /// A result whose reason is invisible on screen is doubly invisible to
+    /// somebody who cannot see the badge that explains it.
+    @Test func aMatchFoundOutsideThePreviewIsSpokenAsSuch() {
+        let long = String(repeating: "boilerplate ", count: 60) + "pomegranate"
+        let card = ClipCardModel(text(long), now: Self.now, terms: ["pomegranate"])
+        #expect(card.accessibilityDescription.contains("matched inside the clip"))
+    }
+
     // MARK: - Showing where a search matched
 
     @Test func withNoSearchTheCardShowsItsPreview() {

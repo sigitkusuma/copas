@@ -124,6 +124,7 @@ struct BoardView: View {
                 .font(.system(size: Theme.metaSize))
                 .foregroundStyle(.tertiary)
         }
+        .accessibilityElement(children: .combine)
     }
 
     /// Always shown, always dim. A hint that appears on hover is a hint nobody
@@ -140,6 +141,14 @@ struct BoardView: View {
         .font(.system(size: Theme.metaSize))
         .foregroundStyle(.quaternary)
         .padding(.horizontal, Theme.gutter)
+        // Read once as a summary rather than as ten disconnected glyphs, and
+        // skipped entirely when arrowing through cards.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            "Keyboard shortcuts: Return pastes, Command Return copies, "
+            + "Command Y previews, Command Delete deletes, Escape "
+            + (model.isSearching ? "clears the search" : "closes the board")
+        )
         .frame(height: Theme.hintBarHeight)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.ultraThinMaterial)

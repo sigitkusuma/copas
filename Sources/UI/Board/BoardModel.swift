@@ -83,9 +83,19 @@ final class BoardModel {
     @ObservationIgnored var onActivate: ((ClipRecord, _ paste: Bool) -> Void)?
     @ObservationIgnored var onDismiss: (() -> Void)?
 
-    /// One screen of cards is a few dozen; this is generous enough that
-    /// scrolling never waits and small enough to rebuild in a frame.
+    /// How many more cards to load at a time.
+    ///
+    /// A few dozen fit on screen, so this is generous enough that scrolling
+    /// never waits, and small enough to build in about a frame — measured at
+    /// 11 ms for a full page, which is most of the budget and the reason it is
+    /// not simply "all of them".
     static let pageLimit = 500
+
+    /// Grows as the user arrows towards the end. Without this the board could
+    /// only ever reach the newest 500 clips: with the default retention of
+    /// 2,000, three quarters of the history would be visible in the result
+    /// count and unreachable by keyboard.
+    private(set) var loadedLimit = pageLimit
 
     init(clips: ClipRepository, blobs: BlobStore) {
         self.clips = clips
@@ -107,6 +117,7 @@ final class BoardModel {
         focusedID = nil
         searchText = ""
         query = SearchQuery("")
+        loadedLimit = Self.pageLimit
         isVisibleGeneration += 1
 
         // Synchronously first, so the board paints with content on the frame it
@@ -127,7 +138,7 @@ final class BoardModel {
     /// One synchronous fetch. Cheap — an indexed query with a limit.
     func reload() {
         do {
-            apply(try clips.page(matching: query.compiled(), limit: Self.pageLimit))
+            apply(try clips.page(matching: query.compiled(), limit: loadedLimit))
         } catch {
             Log.store.error("could not read clips: \(error, privacy: .public)")
         }
@@ -147,7 +158,7 @@ final class BoardModel {
     /// because an observation is bound to the question it was asked.
     private func observe() {
         observationTask?.cancel()
-        let observation = clips.observePage(matching: query.compiled(), limit: Self.pageLimit)
+        let observation = clips.observePage(matching: query.compiled(), limit: loadedLimit)
         observationTask = Task { [weak self] in
             do {
                 for try await records in observation {
@@ -179,6 +190,7 @@ final class BoardModel {
 
         // The old focus belongs to a result set that no longer exists.
         focusedID = nil
+        loadedLimit = Self.pageLimit
         reload()
         observe()
     }
@@ -239,15 +251,39 @@ final class BoardModel {
         let current = focusedIndex ?? 0
         // Clamped rather than wrapped: arriving back at the newest clip after
         // pressing → once too often is disorienting when nothing else moved.
-        focusedID = cards[min(max(current + offset, 0), cards.count - 1)].id
+        let target = min(max(current + offset, 0), cards.count - 1)
+        focusedID = cards[target].id
+        loadMoreIfNeeded(approaching: target)
+    }
+
+    /// Fetches the next page as the keyboard nears the end of this one.
+    ///
+    /// A wider re-fetch rather than an append, because the live observation
+    /// replaces the whole page whenever a clip arrives — appended pages would
+    /// vanish the next time anybody copied anything. Re-fetching costs about
+    /// two milliseconds per five hundred rows, which is cheaper than the
+    /// bookkeeping to keep an appended list correct.
+    private func loadMoreIfNeeded(approaching index: Int) {
+        let cards = cards
+        guard cards.count >= loadedLimit else { return }
+        guard resultCount > cards.count else { return }
+        guard index >= cards.count - 20 else { return }
+
+        loadedLimit += Self.pageLimit
+        reload()
+        observe()
     }
 
     func focusFirst() {
         focusedID = cards.first?.id
     }
 
+    /// End goes to the end of what is loaded, and pulls in more if there is
+    /// more — pressing it twice on a long history walks backwards through it
+    /// rather than stopping at an arbitrary five hundred.
     func focusLast() {
         focusedID = cards.last?.id
+        loadMoreIfNeeded(approaching: cards.count - 1)
     }
 
     /// ⌥← and ⌥→: jump a whole day at a time.

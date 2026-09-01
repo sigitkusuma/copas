@@ -25,13 +25,18 @@ struct SearchBar: View {
                 // Return, arrows and Escape are the board's, and the key monitor
                 // takes them before they reach here. This is only ever text.
                 .onSubmit { model.paste() }
+                .accessibilityLabel("Search clips")
 
             if model.isSearching {
                 Text(resultSummary)
                     .font(.system(size: Theme.metaSize))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
-                    .contentTransition(.numericText())
+                    // Rolling digits are movement, which is exactly what Reduce
+                    // Motion asks us to drop. The number still updates; it just
+                    // does not travel to get there.
+                    .contentTransition(Theme.Motion.isReduced ? .identity : .numericText())
+                    .accessibilityLabel(resultSummary)
 
                 Button {
                     model.clearSearch()
