@@ -1,0 +1,85 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A second push to the same branch makes the first run irrelevant.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test on macOS
+    runs-on: macos-26
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Copas uses isolated deinit and isolated conformances, both Swift 6.2.
+      # Pinning an Xcode version would rot; taking the newest installed one
+      # keeps working as the runner images move, and prints what it found so a
+      # failure names the toolchain rather than leaving you guessing.
+      - name: Select the newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          xcodebuild -version
+          swift --version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # project.yml is the source of truth; the .xcodeproj is generated and not
+      # in the repository, so CI has to build it before it can build anything.
+      - name: Generate the project
+        run: xcodegen generate
+
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: build/dd/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('project.yml') }}
+          restore-keys: spm-${{ runner.os }}-
+
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project Copas.xcodeproj \
+            -scheme Copas \
+            -configuration Debug \
+            -derivedDataPath build/dd \
+            -destination 'platform=macOS' \
+            | tee /tmp/xcodebuild.log \
+            | grep -E '✔|✘|error:|warning:|Test run with|\*\* TEST' || true
+          # tee and grep would otherwise report grep's status, not the build's.
+          exit "${PIPESTATUS[0]}"
+
+      - name: Upload the full log when something fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: /tmp/xcodebuild.log
+
+  shell:
+    name: Check the release script
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Two releases were broken by shell bugs that a reader missed: an empty
+      # array expanded under `set -u`, and a pipeline whose exit status came
+      # from the wrong end. The script is only exercised by hand, so this is the
+      # only thing that reads it on every change.
+      - name: Syntax
+        run: bash -n Scripts/release.sh
+
+      - name: ShellCheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y shellcheck
+          shellcheck --severity=warning Scripts/release.sh
