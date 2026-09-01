@@ -1,0 +1,72 @@
+# Source of truth for the Xcode project. `xcodegen generate` builds Copas.xcodeproj,
+# which is gitignored — a generated .pbxproj is a merge-conflict magnet in a repo
+# that wants contributors.
+name: Copas
+
+options:
+  bundleIdPrefix: com.sigitkusuma
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+configs:
+  Debug: debug
+  Release: release
+
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.6.0
+  GRDB:
+    url: https://github.com/groue/GRDB.swift
+    from: 6.0.0
+
+targets:
+  Copas:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+      - path: Resources
+        buildPhase: resources
+      - path: LICENSE
+        buildPhase: resources
+    configFiles:
+      Debug: Config/App.xcconfig
+      Release: Config/App.xcconfig
+    dependencies:
+      - package: Sparkle
+      - package: GRDB
+        product: GRDB
+    settings:
+      base:
+        # Sparkle.framework lives in Contents/Frameworks and is loaded from there.
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+
+  CopasTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/CopasTests
+    dependencies:
+      - target: Copas
+      - package: GRDB
+        product: GRDB
+    settings:
+      base:
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        SWIFT_VERSION: "5.0"
+
+schemes:
+  Copas:
+    build:
+      targets:
+        Copas: all
+        CopasTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - CopasTests

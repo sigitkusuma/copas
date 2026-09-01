@@ -1,0 +1,7 @@
+// Single source of truth for the app's version.
+//
+// Info.plist references these, and Scripts/release.sh reads them to derive the
+// tag and the Sparkle appcast entry. Bump here and nowhere else.
+
+MARKETING_VERSION = 0.1.0
+CURRENT_PROJECT_VERSION = 1

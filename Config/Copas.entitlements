@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Not sandboxed: the app synthesizes a Cmd-V into whichever app was
+	     frontmost, which requires Accessibility and is incompatible with the
+	     sandbox. This is also why it cannot ship on the Mac App Store. -->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+</dict>
+</plist>
