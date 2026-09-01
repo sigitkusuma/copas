@@ -243,18 +243,19 @@ ok "disk image passes Gatekeeper"
 
 # ─────────────────────────────────────────────────────────────────────────────
 say "Publishing"
-NOTES="$ROOT/docs/releases/$VERSION.html"
-NOTES_ARGUMENT=()
-[ -f "$NOTES" ] && NOTES_ARGUMENT=(--notes-file "$NOTES")
+# One array, never empty. macOS ships bash 3.2, where expanding an empty array
+# under `set -u` is an unbound-variable error rather than nothing at all —
+# fixed in bash 4.4, which Apple will not ship. Seeding it with --title is what
+# keeps that from ever being the case.
+GH_ARGUMENTS=(--title "Copas $VERSION")
 
-DRAFT_ARGUMENT=()
-[ "$DRAFT" -eq 1 ] && DRAFT_ARGUMENT=(--draft)
+NOTES="$ROOT/docs/releases/$VERSION.html"
+[ -f "$NOTES" ] && GH_ARGUMENTS+=(--notes-file "$NOTES")
+[ "$DRAFT" -eq 1 ] && GH_ARGUMENTS+=(--draft)
 
 # Assets first, feed second. A feed that points at a release which does not exist
 # yet hands every running copy a download that 404s.
-gh release create "$TAG" "$ZIP" "$DMG" \
-    --title "Copas $VERSION" \
-    "${NOTES_ARGUMENT[@]}" "${DRAFT_ARGUMENT[@]}" \
+gh release create "$TAG" "$ZIP" "$DMG" "${GH_ARGUMENTS[@]}" \
     || die "could not create the GitHub release"
 ok "release $TAG created with both assets"
 
