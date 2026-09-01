@@ -14,6 +14,10 @@ final class BoardWindowController {
     private let paster: Paster
     private let monitor: PasteboardMonitor
 
+    /// Read at each opening rather than captured once, so changing the setting
+    /// takes effect on the very next Shift-Command-V.
+    private let edge: () -> BoardEdge
+
     private var panel: BoardPanel?
 
     /// Captured *before* activating ourselves, because after that we are the
@@ -27,12 +31,14 @@ final class BoardWindowController {
         model: BoardModel,
         thumbnails: ThumbnailStore,
         paster: Paster,
-        monitor: PasteboardMonitor
+        monitor: PasteboardMonitor,
+        edge: @escaping () -> BoardEdge = { .top }
     ) {
         self.model = model
         self.thumbnails = thumbnails
         self.paster = paster
         self.monitor = monitor
+        self.edge = edge
 
         model.onDismiss = { [weak self] in self?.dismiss() }
         model.onActivate = { [weak self] record, paste in
@@ -52,7 +58,7 @@ final class BoardWindowController {
         previousApp = NSWorkspace.shared.frontmostApplication
 
         let panel = existingPanel()
-        panel.setFrame(BoardGeometry.frame(in: targetScreen().visibleFrame), display: false)
+        panel.setFrame(BoardGeometry.frame(in: targetScreen().visibleFrame, edge: edge()), display: false)
 
         model.start()
 
@@ -111,7 +117,7 @@ final class BoardWindowController {
     private func existingPanel() -> BoardPanel {
         if let panel { return panel }
 
-        let panel = BoardPanel(contentRect: BoardGeometry.frame(in: targetScreen().visibleFrame))
+        let panel = BoardPanel(contentRect: BoardGeometry.frame(in: targetScreen().visibleFrame, edge: edge()))
         panel.contentView = NSHostingView(
             rootView: BoardView(model: model, thumbnails: thumbnails)
         )

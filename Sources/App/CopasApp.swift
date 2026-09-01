@@ -12,7 +12,10 @@ struct CopasApp: App {
 
     var body: some Scene {
         Settings {
-            SettingsScene()
+            SettingsScene(
+                preferences: coordinator.preferences,
+                actions: coordinator.settingsActions
+            )
         }
     }
 }

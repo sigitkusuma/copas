@@ -12,6 +12,11 @@ import SwiftUI
 @MainActor
 final class AppCoordinator: NSObject, NSApplicationDelegate {
 
+    /// Constructed here rather than in `applicationDidFinishLaunching`, because
+    /// the Settings scene is built from the app's `body` and may be evaluated
+    /// before launch finishes.
+    let preferences = Preferences()
+
     private var statusItem: StatusItemController?
     private let hotkeys = HotkeyCenter()
 
@@ -38,11 +43,19 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         startCapturing()
         registerHotkeys()
 
-        statusItem = StatusItemController(
-            onToggleBoard: { [weak self] in self?.toggleBoard() },
-            onOpenSettings: { [weak self] in self?.openSettings() },
-            onQuit: { NSApp.terminate(nil) }
-        )
+        statusItem = StatusItemController(actions: StatusItemController.Actions(
+            toggleBoard: { [weak self] in self?.toggleBoard() },
+            captureToText: { [weak self] in self?.captureToText() },
+            togglePause: { [weak self] in self?.togglePause() },
+            isPaused: { [weak self] in self?.monitor?.isPaused ?? false },
+            isCaptureToTextEnabled: { [weak self] in self?.preferences.isCaptureToTextEnabled ?? false },
+            shortcuts: { [weak self] in
+                guard let self else { return (.showBoard, .captureToText) }
+                return (preferences.showBoardHotkey, preferences.captureToTextHotkey)
+            },
+            openSettings: { [weak self] in self?.openSettings() },
+            quit: { NSApp.terminate(nil) }
+        ))
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -87,9 +100,10 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
     /// means the sweep that follows also collects whatever pruning just orphaned,
     /// rather than leaving it for the launch after next.
     private func tidyUp(clips: ClipRepository, blobs: BlobStore, thumbnails: ThumbnailStore) {
+        let retention = preferences.retention
         Task.detached(priority: .utility) {
             do {
-                let pruned = try clips.prune(.default)
+                let pruned = try clips.prune(retention)
                 let live = try clips.liveKeys()
                 let removedBlobs = try blobs.collectGarbage(keeping: live.blobs)
                 let removedThumbnails = try thumbnails.collectGarbage(keeping: live.thumbnails)
@@ -121,16 +135,16 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         // encodes a thumbnail and writes to disk — all of it work the monitor
         // deliberately does not do, precisely so it can happen somewhere else.
         let payloads = monitor.payloads
-        captureTask = Task.detached(priority: .utility) {
+        captureTask = Task.detached(priority: .utility) { [weak self] in
             for await payload in payloads {
                 do {
                     guard let outcome = try ingestor.ingest(payload) else { continue }
 
                     // Only for pictures the history has not seen before: copying
                     // the same screenshot twice should not read it twice.
-                    if outcome.isNew, outcome.record.kind == .image {
-                        await recognition.recognize(outcome.record)
-                    }
+                    guard outcome.isNew, outcome.record.kind == .image else { continue }
+                    guard await self?.preferences.recognizesTextInImages == true else { continue }
+                    await recognition.recognize(outcome.record)
                 } catch {
                     Log.store.error("could not store a clip: \(error, privacy: .public)")
                 }
@@ -146,28 +160,91 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             model: BoardModel(clips: clips, blobs: blobs),
             thumbnails: thumbnails,
             paster: paster,
-            monitor: monitor
+            monitor: monitor,
+            edge: { [weak self] in self?.preferences.boardEdge ?? .top }
         )
+
+        applyExclusions()
     }
 
+    /// Claims both shortcuts. Safe to call again after the user changes one.
     private func registerHotkeys() {
-        let claimed = hotkeys.register(.showBoard, combination: .showBoard) { [weak self] in
+        let board = preferences.showBoardHotkey
+        let claimed = hotkeys.register(.showBoard, combination: board) { [weak self] in
             self?.toggleBoard()
         }
 
-        hotkeys.register(.captureToText, combination: .captureToText) { [weak self] in
-            self?.captureToText()
-        }
-
-        // Carbon refuses a combination another running app already holds. The
-        // likeliest cause by far is the app this replaces still running, and
-        // saying so beats leaving a shortcut that does nothing.
+        // Carbon refuses a combination another running app already holds, and a
+        // shortcut that silently does nothing is indistinguishable from a broken
+        // app. Saying so is the least this can do until Settings can show it.
         if !claimed {
             Log.app.error("""
-                \(KeyCombination.showBoard.displayString, privacy: .public) is already \
-                claimed by another app, so the shortcut will not fire
+                \(board.displayString, privacy: .public) is already claimed by \
+                another app, so the shortcut will not fire
                 """)
         }
+
+        if preferences.isCaptureToTextEnabled {
+            hotkeys.register(.captureToText, combination: preferences.captureToTextHotkey) { [weak self] in
+                self?.captureToText()
+            }
+        } else {
+            hotkeys.unregister(.captureToText)
+        }
+    }
+
+    // MARK: - Settings
+
+    /// The narrow set of things the Settings window can ask for.
+    var settingsActions: SettingsActions {
+        SettingsActions(
+            reregisterHotkeys: { [weak self] in self?.registerHotkeys() },
+            applyExclusions: { [weak self] in self?.applyExclusions() },
+            applyRetention: { [weak self] in self?.applyRetention() },
+            clipCount: { [weak self] in (try? self?.clips?.count()) ?? 0 },
+            clearHistory: { [weak self] in self?.clearHistory() }
+        )
+    }
+
+    /// Pushed into the reader rather than read from it, so the capture path
+    /// never reaches back into preferences on the hot poll.
+    private func applyExclusions() {
+        monitor?.reader.excludedBundleIDs = Set(preferences.excludedBundleIDs)
+    }
+
+    /// Trims immediately rather than waiting for the next launch: a user who has
+    /// just lowered the limit expects the clips to be gone now.
+    private func applyRetention() {
+        guard let clips, let blobs, let thumbnails else { return }
+        let retention = preferences.retention
+        Task.detached(priority: .utility) {
+            do {
+                _ = try clips.prune(retention)
+                let live = try clips.liveKeys()
+                try blobs.collectGarbage(keeping: live.blobs)
+                try thumbnails.collectGarbage(keeping: live.thumbnails)
+            } catch {
+                Log.store.error("could not apply retention: \(error, privacy: .public)")
+            }
+        }
+    }
+
+    private func clearHistory() {
+        guard let clips, let blobs, let thumbnails else { return }
+        do {
+            try clips.deleteAll()
+            try blobs.collectGarbage(keeping: [])
+            try thumbnails.collectGarbage(keeping: [])
+        } catch {
+            Log.store.error("could not clear the history: \(error, privacy: .public)")
+            NSSound.beep()
+        }
+    }
+
+    private func togglePause() {
+        guard let monitor else { return }
+        monitor.isPaused ? monitor.resume() : monitor.pause()
+        statusItem?.refresh()
     }
 
     // MARK: - Actions
@@ -217,6 +294,10 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         pasteboard.clearContents()
 
         if text.isEmpty {
+            guard preferences.copiesImageWhenNoTextFound else {
+                CaptureHUD.shared.show("No text found", symbol: "text.viewfinder")
+                return
+            }
             // Never throw away what the user just took the trouble to select.
             // A picture they have to read themselves beats nothing at all.
             pasteboard.setData(data, forType: .png)

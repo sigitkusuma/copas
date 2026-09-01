@@ -8,22 +8,35 @@ import AppKit
 @MainActor
 final class StatusItemController {
 
+    /// What the menu can do. A struct rather than seven initialiser arguments,
+    /// so adding an item does not mean threading another closure through.
+    struct Actions {
+        var toggleBoard: () -> Void = {}
+        var captureToText: () -> Void = {}
+        var togglePause: () -> Void = {}
+        var isPaused: () -> Bool = { false }
+        var isCaptureToTextEnabled: () -> Bool = { true }
+        var shortcuts: () -> (board: KeyCombination, capture: KeyCombination) = {
+            (.showBoard, .captureToText)
+        }
+        var openSettings: () -> Void = {}
+        var quit: () -> Void = {}
+    }
+
     private let statusItem: NSStatusItem
-    private let onToggleBoard: () -> Void
-    private let onOpenSettings: () -> Void
-    private let onQuit: () -> Void
+    private let actions: Actions
 
-    init(
-        onToggleBoard: @escaping () -> Void,
-        onOpenSettings: @escaping () -> Void,
-        onQuit: @escaping () -> Void
-    ) {
-        self.onToggleBoard = onToggleBoard
-        self.onOpenSettings = onOpenSettings
-        self.onQuit = onQuit
+    init(actions: Actions) {
+        self.actions = actions
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-
         configureButton()
+    }
+
+    /// Dims the icon while capture is paused, so the state is visible without
+    /// opening anything. A paused clipboard manager that looks exactly like a
+    /// running one is a bug report waiting to happen.
+    func refresh() {
+        statusItem.button?.appearsDisabled = actions.isPaused()
     }
 
     private func configureButton() {
@@ -43,12 +56,13 @@ final class StatusItemController {
         if event.type == .rightMouseUp || event.modifierFlags.contains(.control) {
             presentMenu()
         } else {
-            onToggleBoard()
+            actions.toggleBoard()
         }
     }
 
     private func presentMenu() {
         let menu = NSMenu()
+        let shortcuts = actions.shortcuts()
 
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
         let header = NSMenuItem(title: "Copas \(version)", action: nil, keyEquivalent: "")
@@ -56,9 +70,28 @@ final class StatusItemController {
         menu.addItem(header)
         menu.addItem(.separator())
 
-        menu.addItem(item("Show Clipboard", #selector(menuToggleBoard)))
-        menu.addItem(item("Settings…", #selector(menuOpenSettings), key: ","))
+        menu.addItem(item(
+            "Show Clipboard",
+            #selector(menuToggleBoard),
+            shortcut: shortcuts.board
+        ))
+
+        let capture = item(
+            "Capture to Text",
+            #selector(menuCaptureToText),
+            shortcut: shortcuts.capture
+        )
+        capture.isEnabled = actions.isCaptureToTextEnabled()
+        menu.addItem(capture)
+
         menu.addItem(.separator())
+        menu.addItem(item(
+            actions.isPaused() ? "Resume Capture" : "Pause Capture",
+            #selector(menuTogglePause)
+        ))
+
+        menu.addItem(.separator())
+        menu.addItem(item("Settings…", #selector(menuOpenSettings), key: ","))
         menu.addItem(item("Quit Copas", #selector(menuQuit), key: "q"))
 
         // Attaching the menu for one click and clearing it immediately keeps
@@ -75,7 +108,25 @@ final class StatusItemController {
         return menuItem
     }
 
-    @objc private func menuToggleBoard() { onToggleBoard() }
-    @objc private func menuOpenSettings() { onOpenSettings() }
-    @objc private func menuQuit() { onQuit() }
+    /// Shows the real shortcut beside the item, so the menu teaches the keyboard
+    /// rather than replacing it.
+    private func item(_ title: String, _ action: Selector, shortcut: KeyCombination) -> NSMenuItem {
+        let menuItem = item(title, action)
+        menuItem.keyEquivalent = KeyCombination.keyName(for: shortcut.keyCode).lowercased()
+
+        var mask: NSEvent.ModifierFlags = []
+        if shortcut.modifiers.contains(.command) { mask.insert(.command) }
+        if shortcut.modifiers.contains(.shift) { mask.insert(.shift) }
+        if shortcut.modifiers.contains(.option) { mask.insert(.option) }
+        if shortcut.modifiers.contains(.control) { mask.insert(.control) }
+        menuItem.keyEquivalentModifierMask = mask
+
+        return menuItem
+    }
+
+    @objc private func menuToggleBoard() { actions.toggleBoard() }
+    @objc private func menuCaptureToText() { actions.captureToText() }
+    @objc private func menuTogglePause() { actions.togglePause(); refresh() }
+    @objc private func menuOpenSettings() { actions.openSettings() }
+    @objc private func menuQuit() { actions.quit() }
 }
