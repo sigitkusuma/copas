@@ -62,7 +62,13 @@ enum Theme {
     /// Retina without decoding the full image.
     static let thumbnailMaxPixel: CGFloat = cardWidth * 2
 
-    static let boardHeight: CGFloat = 420
+    /// The row of key hints along the bottom edge.
+    static let hintBarHeight: CGFloat = 26
+
+    /// Derived, not chosen. A height picked independently of the card it holds
+    /// drifts the moment either changes, and the slack shows up as a band of
+    /// empty panel under the cards.
+    static let boardHeight: CGFloat = gutter + cardHeight + 12 + hintBarHeight
     static let controlRadius: CGFloat = 0
     static let chipRadius: CGFloat = 2
     static let focusRingWidth: CGFloat = 2

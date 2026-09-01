@@ -209,29 +209,64 @@ extension ClipRecord {
         )
     }
 
-    /// Collapses runs of whitespace and clips to ``previewLimit``.
+    /// A compact but faithful excerpt, capped at ``previewLimit``.
     ///
     /// Precomputed at capture rather than derived in `body`: a card that has to
     /// normalise a 2 MB string to draw three lines is a dropped frame every time
     /// it scrolls into view.
+    ///
+    /// Line structure and indentation are kept. Flattening everything to one
+    /// line makes the cheapest thing a card can be — a readable snippet of code —
+    /// unreadable, and indentation is most of what tells you at a glance which
+    /// snippet you are looking at. What does get normalised is only noise: a run
+    /// of blank lines becomes one, trailing spaces go, and a wall of alignment
+    /// spaces is bounded so it cannot eat the whole budget.
     static func makePreview(from string: String) -> String {
-        var collapsed = ""
-        collapsed.reserveCapacity(min(string.count, previewLimit + 1))
-        var pendingSpace = false
-        for character in string {
-            if character.isWhitespace {
-                pendingSpace = !collapsed.isEmpty
+        // Bounded work whatever the input: nothing past this could survive the
+        // cap even if every character of it were kept.
+        let sample = string.prefix(previewLimit * 4)
+
+        var preview = ""
+        preview.reserveCapacity(previewLimit + 1)
+        var gap = ""
+
+        for character in sample {
+            // Before the whitespace test, because a newline is whitespace too —
+            // and because `\r\n` is a single Swift Character, so this counts a
+            // Windows line ending once rather than turning every line of Windows
+            // text into a blank line between two.
+            if character.isNewline {
+                gap.append("\n")
                 continue
             }
-            if pendingSpace {
-                collapsed.append(" ")
-                pendingSpace = false
+            if character.isWhitespace {
+                gap.append(character)
+                continue
             }
-            collapsed.append(character)
-            if collapsed.count > previewLimit { break }
+            // Whitespace before the first real character is indentation of
+            // nothing, so it is dropped rather than normalised.
+            if !preview.isEmpty {
+                preview += normalizedGap(gap)
+            }
+            gap = ""
+            preview.append(character)
+            if preview.count >= previewLimit { break }
         }
-        return collapsed.count > previewLimit
-            ? String(collapsed.prefix(previewLimit))
-            : collapsed
+
+        // `gap` is deliberately never flushed, which is what trims the trailing
+        // whitespace of the excerpt and of its last line.
+        return preview.count > previewLimit
+            ? String(preview.prefix(previewLimit))
+            : preview
+    }
+
+    private static func normalizedGap(_ run: String) -> String {
+        guard let lastBreak = run.lastIndex(of: "\n") else {
+            // Interior spacing, kept so aligned columns survive, but bounded.
+            return String(run.prefix(8))
+        }
+        let breaks = run.count { $0 == "\n" }
+        let indent = run[run.index(after: lastBreak)...]
+        return String(repeating: "\n", count: min(breaks, 2)) + indent.prefix(16)
     }
 }

@@ -27,6 +27,9 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
     private var paster: Paster?
     private var captureTask: Task<Void, Never>?
 
+    // The board.
+    private var board: BoardWindowController?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         openStore()
         startCapturing()
@@ -125,8 +128,16 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         }
 
         monitor.start()
+        let paster = Paster(blobs: blobs)
+
         self.monitor = monitor
-        self.paster = Paster(blobs: blobs)
+        self.paster = paster
+        self.board = BoardWindowController(
+            model: BoardModel(clips: clips, blobs: blobs),
+            thumbnails: thumbnails,
+            paster: paster,
+            monitor: monitor
+        )
     }
 
     private func registerHotkeys() {
@@ -148,37 +159,11 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
     // MARK: - Actions
 
     private func toggleBoard() {
-        // Phase 3 replaces this with the board. Until then the shortcut exercises
-        // the whole loop end to end — capture, store, paste — which is what makes
-        // this build worth using for real.
-        pasteMostRecentClip()
-    }
-
-    private func pasteMostRecentClip() {
-        guard let clips, let paster, let monitor else {
+        guard let board else {
             NSSound.beep()
             return
         }
-
-        do {
-            guard let newest = try clips.page(limit: 1).first else {
-                NSSound.beep()
-                return
-            }
-
-            // Suppress before pressing the key, not after: the write has already
-            // bumped the change count, and the poll could land in between.
-            let changeCount = try paster.copy(newest)
-            monitor.suppress(upTo: changeCount)
-            try paster.pressCommandV()
-        } catch PasteError.notTrustedForAccessibility {
-            // The clip is on the pasteboard either way, so ⌘V by hand works now.
-            Log.app.notice("clip copied — Accessibility is needed to press ⌘V for you")
-            Paster.requestAccessibilityTrust()
-        } catch {
-            Log.app.error("could not paste: \(error, privacy: .public)")
-            NSSound.beep()
-        }
+        board.toggle()
     }
 
     private func openSettings() {

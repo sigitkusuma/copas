@@ -5,9 +5,25 @@ import Testing
 
 struct ClipRecordTests {
 
-    @Test func previewCollapsesWhitespaceRuns() {
-        let preview = ClipRecord.makePreview(from: "  hello\n\n\tthere   world  ")
-        #expect(preview == "hello there world")
+    /// Line structure is what tells you at a glance which snippet you are
+    /// looking at, so a preview keeps it. Only noise is normalised.
+    @Test func previewKeepsLinesAndIndentation() {
+        let code = "func add() {\n    return 1\n}"
+        #expect(ClipRecord.makePreview(from: code) == code)
+    }
+
+    @Test func previewTrimsTheEdgesAndCollapsesBlankRuns() {
+        #expect(ClipRecord.makePreview(from: "  hello  \n\n\n\n\nworld  ") == "hello\n\nworld")
+    }
+
+    @Test func previewNormalisesWindowsLineEndings() {
+        #expect(ClipRecord.makePreview(from: "one\r\ntwo") == "one\ntwo")
+    }
+
+    /// A run of alignment spaces should not be able to spend the whole budget.
+    @Test func previewBoundsARunOfSpaces() {
+        let padded = "a" + String(repeating: " ", count: 200) + "b"
+        #expect(ClipRecord.makePreview(from: padded) == "a" + String(repeating: " ", count: 8) + "b")
     }
 
     @Test func previewStopsAtTheLimit() {
