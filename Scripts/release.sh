@@ -20,6 +20,11 @@ ROOT="$PWD"
 BUILD="$ROOT/build/release"
 EXPORT="$BUILD/export"
 ARTIFACTS="$ROOT/build/artifacts"
+# The ZIP is what Sparkle downloads; the DMG is what a person downloads. They
+# live in separate directories because generate_appcast refuses a directory
+# holding two archives of the same version — reasonably, since it cannot know
+# which one an update should be.
+UPDATES="$ARTIFACTS/updates"
 
 DRY_RUN=0
 DRAFT=0
@@ -120,7 +125,7 @@ ok "feed URL is $FEED_URL"
 # ─────────────────────────────────────────────────────────────────────────────
 say "Building"
 rm -rf "$BUILD" "$ARTIFACTS"
-mkdir -p "$ARTIFACTS"
+mkdir -p "$ARTIFACTS" "$UPDATES"
 
 xcodegen generate >/dev/null
 ok "project generated"
@@ -183,8 +188,8 @@ ok "the built app carries its feed URL and public key"
 # ─────────────────────────────────────────────────────────────────────────────
 if [ "$DRY_RUN" -eq 1 ]; then
     say "Dry run — stopping before notarisation"
-    ditto -c -k --keepParent "$APP" "$ARTIFACTS/Copas-$VERSION.zip"
-    ok "wrote $ARTIFACTS/Copas-$VERSION.zip (unnotarised, do not publish)"
+    ditto -c -k --keepParent "$APP" "$UPDATES/Copas-$VERSION.zip"
+    ok "wrote $UPDATES/Copas-$VERSION.zip (unnotarised, do not publish)"
     echo
     echo "    Everything that can be checked without an Apple round trip passed."
     exit 0
@@ -203,11 +208,22 @@ xcrun stapler validate "$APP" || die "the staple does not validate"
 ok "app notarised and stapled"
 
 say "Packaging"
-ZIP="$ARTIFACTS/Copas-$VERSION.zip"
+ZIP="$UPDATES/Copas-$VERSION.zip"
 DMG="$ARTIFACTS/Copas-$VERSION.dmg"
 
 ditto -c -k --keepParent "$APP" "$ZIP"
 ok "$(basename "$ZIP")"
+
+# generate_appcast picks up release notes from a file named after the *archive*,
+# not after the version, and embeds them as CDATA when they are a fragment. Get
+# the name wrong and the update sheet is simply blank, with no warning.
+NOTES="$ROOT/docs/releases/$VERSION.html"
+if [ -f "$NOTES" ]; then
+    cp "$NOTES" "$UPDATES/Copas-$VERSION.html"
+    ok "release notes will appear in the update sheet"
+else
+    ok "no release notes for $VERSION — the update sheet will be bare"
+fi
 
 STAGE="$BUILD/dmg"
 rm -rf "$STAGE"; mkdir -p "$STAGE"
@@ -248,8 +264,6 @@ say "Publishing"
 # fixed in bash 4.4, which Apple will not ship. Seeding it with --title is what
 # keeps that from ever being the case.
 GH_ARGUMENTS=(--title "Copas $VERSION")
-
-NOTES="$ROOT/docs/releases/$VERSION.html"
 [ -f "$NOTES" ] && GH_ARGUMENTS+=(--notes-file "$NOTES")
 [ "$DRAFT" -eq 1 ] && GH_ARGUMENTS+=(--draft)
 
@@ -264,7 +278,7 @@ say "Updating the appcast"
     --download-url-prefix "https://github.com/sigitkusuma/copas/releases/download/$TAG/" \
     --link "https://github.com/sigitkusuma/copas" \
     -o "$ROOT/docs/appcast.xml" \
-    "$ARTIFACTS" \
+    "$UPDATES" \
     || die "could not generate the appcast"
 ok "docs/appcast.xml written and signed"
 

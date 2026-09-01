@@ -1,8 +1,13 @@
 # Release notes
 
 One HTML file per version, named after it — `1.0.0.html`. `Scripts/release.sh`
-picks the matching file up as the GitHub release body, and `generate_appcast`
-links it from the appcast so Sparkle can show it in the update sheet.
+uses it as the GitHub release body, and copies it beside the archive as
+`Copas-1.0.0.html` so `generate_appcast` embeds it in the feed and Sparkle shows
+it in the update sheet.
+
+The copy is renamed because `generate_appcast` matches release notes to an
+archive by filename, not by version. Named after the version alone, it is
+silently ignored and the update sheet comes up blank.
 
 Fragments, not documents: no `<html>`, no `<body>`, no styling. Sparkle renders
 them inside its own window.

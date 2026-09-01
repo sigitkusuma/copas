@@ -1,0 +1,53 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Copas</title>
+        <item>
+            <title>1.0.0</title>
+            <pubDate>Tue, 01 Sep 2026 17:12:21 +0700</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>1</sparkle:version>
+            <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.0</h2>
+
+<p>
+  The first release. A clipboard manager that lives in the menu bar: press
+  <b>⇧⌘V</b> and everything you have copied is a strip of cards under the menu
+  bar, newest first, grouped by day. Arrow to one, press Return, and it pastes
+  into whatever you were just typing in.
+</p>
+
+<h3>What it does</h3>
+<ul>
+  <li><b>Keeps formatting.</b> Copy something bold and it pastes back bold.</li>
+  <li><b>Search that reaches the whole clip</b>, not just its first line — and
+      the text inside your screenshots. Type anywhere on the board to start,
+      or narrow it with <code>app:xcode</code>, <code>type:image</code>,
+      <code>has:text</code>.</li>
+  <li><b>Reads text in images as they arrive</b>, on your Mac, through Vision.
+      A screenshot of a receipt is findable by what the receipt says.</li>
+  <li><b>⇧⌘2 captures a region of the screen as text</b> — a receipt, an error
+      dialog, something somebody sent you as a picture.</li>
+  <li><b>Skips what it should.</b> Anything a password manager marks as
+      concealed is never read, never hashed, and never written to disk. Other
+      apps can be excluded by hand.</li>
+</ul>
+
+<h3>Privacy</h3>
+<p>
+  Everything stays on your Mac. No account, no sync, no analytics. Text
+  recognition runs locally. The only network request Copas makes is to its own
+  update feed.
+</p>
+
+<h3>Requirements</h3>
+<p>
+  macOS 14 or later. Universal — Apple silicon and Intel. Signed and notarised
+  by Apple.
+</p>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.0/Copas-1.0.0.zip" length="3814731" type="application/octet-stream" sparkle:edSignature="TLUqFa5Miw9L15czD4MKXFd6nC0Yu9hBRLLsRrIXNYZL/46eSISsRh98rl41wftiVy04AMjofhIjrGF0qTxfBw=="/>
+        </item>
+    </channel>
+</rss>
