@@ -20,7 +20,7 @@ packages:
     from: 2.6.0
   GRDB:
     url: https://github.com/groue/GRDB.swift
-    from: 6.0.0
+    from: 7.0.0
 
 targets:
   Copas:
@@ -51,12 +51,23 @@ targets:
       - path: Tests/CopasTests
     dependencies:
       - target: Copas
+      # Module visibility only. Linking GRDB here as well puts a second copy of
+      # it inside the test bundle, and GRDB's thread-checking watchdog is
+      # per-copy — every database created by the app then looks, to a test, like
+      # it is being used on the wrong thread.
       - package: GRDB
         product: GRDB
+        link: false
     settings:
       base:
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         SWIFT_VERSION: "5.0"
+        # The test bundle has no Info.plist of its own to check in.
+        GENERATE_INFOPLIST_FILE: true
+        PRODUCT_BUNDLE_IDENTIFIER: com.sigitkusuma.copas.tests
+        # Signed ad hoc like the Debug app it is injected into.
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
 
 schemes:
   Copas:

@@ -11,8 +11,23 @@ SWIFT_VERSION = 5.0
 ARCHS = arm64 x86_64
 ONLY_ACTIVE_ARCH = NO
 
+// Debug builds only the machine it runs on. Swift Package Manager compiles its
+// packages for the destination architecture alone, so asking a local build for
+// both slices leaves the second one with no GRDB module to import — a hard
+// error, not a warning. Release still builds both, and Scripts/release.sh
+// checks the shipped binary with `lipo`.
+ONLY_ACTIVE_ARCH[config=Debug] = YES
+
 CODE_SIGN_STYLE = Manual
 DEVELOPMENT_TEAM = Q6HKRLR2CN
+
+// This machine holds a Developer ID certificate and nothing else — there is no
+// "Mac Development" certificate, and asking for one fails the build outright.
+// Debug therefore signs ad hoc, which is all a local run and the test host need.
+// Release is the configuration that ships, and Scripts/release.sh refuses to
+// continue if this identity does not resolve.
+CODE_SIGN_IDENTITY = Developer ID Application
+CODE_SIGN_IDENTITY[config=Debug] = -
 ENABLE_HARDENED_RUNTIME = YES
 CODE_SIGN_ENTITLEMENTS = Config/Copas.entitlements
 

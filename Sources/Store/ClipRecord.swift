@@ -1,0 +1,218 @@
+import Foundation
+import GRDB
+
+/// What a clip holds. Stored as an integer so the set can grow without a migration.
+enum ClipKind: Int, Codable, Sendable, CaseIterable, DatabaseValueConvertible {
+    case text = 0
+    case image = 1
+}
+
+/// The app a clip was copied from.
+struct SourceApp: Sendable, Equatable, Hashable {
+    var bundleID: String?
+    var name: String?
+
+    init(bundleID: String? = nil, name: String? = nil) {
+        self.bundleID = bundleID
+        self.name = name
+    }
+}
+
+/// One row of `clip`.
+///
+/// Three things here are deliberate departures from the model this app replaces:
+///
+/// 1. `isInline` replaces a `textContent` / `textFilename` / `isTruncated` triple.
+///    Three overlapping answers to "how big is this" meant a truncated clip could
+///    silently lose its tail. The rule is now single-valued: text up to
+///    ``inlineByteLimit`` lives in `inlineText`, anything larger lives in a blob,
+///    and nothing is ever discarded.
+/// 2. `contentHash` is a real SHA-256 — see ``ContentHash``.
+/// 3. `sourceBundleID` sits alongside the display name, so `app:` searches survive
+///    a rename and icons resolve from a stable key.
+struct ClipRecord: Codable, Sendable, Identifiable, Equatable, FetchableRecord, PersistableRecord {
+
+    static let databaseTableName = "clip"
+
+    /// Text at or below this many UTF-8 bytes is stored in the row itself.
+    ///
+    /// 8 KB comfortably covers the overwhelming majority of copied text while
+    /// keeping the table small enough that a page of 200 rows is one cheap read.
+    static let inlineByteLimit = 8 * 1024
+
+    /// Longest precomputed preview. Enough for the tallest card, short enough that
+    /// selecting a page never drags a novel out of the database.
+    static let previewLimit = 240
+
+    var id: String
+    var kind: ClipKind
+    /// Seconds since 1970 — *not* Apple's reference date. The previous app stored
+    /// reference-date doubles, and the two epochs differ by 31 years, so the
+    /// importer converts rather than copies.
+    var createdAt: Double
+    var sourceBundleID: String?
+    var sourceAppName: String?
+    var preview: String
+    var contentHash: String
+    var byteSize: Int
+    var charCount: Int
+    var isInline: Bool
+    var inlineText: String?
+    var blobKey: String?
+    var thumbKey: String?
+    var pixelWidth: Int?
+    var pixelHeight: Int?
+    var recognizedText: String?
+    var recognizedAt: Double?
+    /// JSON holding pins, bookmarks and tags carried over from the previous app.
+    /// Nothing reads it yet; it exists so an import is lossless and a later
+    /// version can restore those features without a second migration.
+    var legacyFlags: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case kind
+        case createdAt = "created_at"
+        case sourceBundleID = "source_bundle_id"
+        case sourceAppName = "source_app_name"
+        case preview
+        case contentHash = "content_hash"
+        case byteSize = "byte_size"
+        case charCount = "char_count"
+        case isInline = "is_inline"
+        case inlineText = "inline_text"
+        case blobKey = "blob_key"
+        case thumbKey = "thumb_key"
+        case pixelWidth = "pixel_width"
+        case pixelHeight = "pixel_height"
+        case recognizedText = "recognized_text"
+        case recognizedAt = "recognized_at"
+        case legacyFlags = "legacy_flags"
+    }
+
+    enum Columns {
+        static let id = Column(CodingKeys.id)
+        static let kind = Column(CodingKeys.kind)
+        static let createdAt = Column(CodingKeys.createdAt)
+        static let sourceBundleID = Column(CodingKeys.sourceBundleID)
+        static let sourceAppName = Column(CodingKeys.sourceAppName)
+        static let preview = Column(CodingKeys.preview)
+        static let contentHash = Column(CodingKeys.contentHash)
+        static let blobKey = Column(CodingKeys.blobKey)
+        static let thumbKey = Column(CodingKeys.thumbKey)
+        static let recognizedText = Column(CodingKeys.recognizedText)
+        static let recognizedAt = Column(CodingKeys.recognizedAt)
+    }
+
+    var createdDate: Date { Date(timeIntervalSince1970: createdAt) }
+
+    var source: SourceApp { SourceApp(bundleID: sourceBundleID, name: sourceAppName) }
+
+    /// A clip whose bytes live outside the row, and so needs the blob store to be
+    /// readable at all.
+    var isBlobBacked: Bool { blobKey != nil }
+}
+
+// MARK: - Construction
+
+extension ClipRecord {
+
+    /// Builds a text clip, spilling to a blob only when it exceeds
+    /// ``inlineByteLimit``.
+    ///
+    /// The overflow path is a closure rather than a `BlobStore` parameter so this
+    /// stays a pure value transformation for anything small — which, in practice,
+    /// is nearly everything — and touches the disk only when it genuinely must.
+    static func text(
+        _ string: String,
+        source: SourceApp = SourceApp(),
+        at date: Date = Date(),
+        id: String = UUID().uuidString,
+        overflow: (Data) throws -> String
+    ) rethrows -> ClipRecord {
+        let data = Data(string.utf8)
+        let inline = data.count <= inlineByteLimit
+        return ClipRecord(
+            id: id,
+            kind: .text,
+            createdAt: date.timeIntervalSince1970,
+            sourceBundleID: source.bundleID,
+            sourceAppName: source.name,
+            preview: makePreview(from: string),
+            contentHash: ContentHash.hex(of: data),
+            byteSize: data.count,
+            charCount: string.count,
+            isInline: inline,
+            inlineText: inline ? string : nil,
+            blobKey: inline ? nil : try overflow(data),
+            thumbKey: nil,
+            pixelWidth: nil,
+            pixelHeight: nil,
+            recognizedText: nil,
+            recognizedAt: nil,
+            legacyFlags: nil
+        )
+    }
+
+    /// Builds an image clip. Images always live in a blob; `preview` stays empty
+    /// because there is no text to show — what makes an image findable is its
+    /// `recognizedText`, filled in later by the recogniser.
+    static func image(
+        blobKey: String,
+        thumbKey: String?,
+        contentHash: String,
+        byteSize: Int,
+        pixelWidth: Int,
+        pixelHeight: Int,
+        source: SourceApp = SourceApp(),
+        at date: Date = Date(),
+        id: String = UUID().uuidString
+    ) -> ClipRecord {
+        ClipRecord(
+            id: id,
+            kind: .image,
+            createdAt: date.timeIntervalSince1970,
+            sourceBundleID: source.bundleID,
+            sourceAppName: source.name,
+            preview: "",
+            contentHash: contentHash,
+            byteSize: byteSize,
+            charCount: 0,
+            isInline: false,
+            inlineText: nil,
+            blobKey: blobKey,
+            thumbKey: thumbKey,
+            pixelWidth: pixelWidth,
+            pixelHeight: pixelHeight,
+            recognizedText: nil,
+            recognizedAt: nil,
+            legacyFlags: nil
+        )
+    }
+
+    /// Collapses runs of whitespace and clips to ``previewLimit``.
+    ///
+    /// Precomputed at capture rather than derived in `body`: a card that has to
+    /// normalise a 2 MB string to draw three lines is a dropped frame every time
+    /// it scrolls into view.
+    static func makePreview(from string: String) -> String {
+        var collapsed = ""
+        collapsed.reserveCapacity(min(string.count, previewLimit + 1))
+        var pendingSpace = false
+        for character in string {
+            if character.isWhitespace {
+                pendingSpace = !collapsed.isEmpty
+                continue
+            }
+            if pendingSpace {
+                collapsed.append(" ")
+                pendingSpace = false
+            }
+            collapsed.append(character)
+            if collapsed.count > previewLimit { break }
+        }
+        return collapsed.count > previewLimit
+            ? String(collapsed.prefix(previewLimit))
+            : collapsed
+    }
+}
