@@ -3,6 +3,28 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.0.1</title>
+            <pubDate>Tue, 01 Sep 2026 20:05:43 +0700</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.0.1</h2>
+
+<p>
+  Copas has an icon. 1.0.0 shipped with the generic application placeholder in
+  the Dock switcher, in Finder, and in the update sheet you are most likely
+  reading this in.
+</p>
+
+<p>
+  Nothing else about the app has changed. Your clips, settings and shortcuts
+  are untouched by this update.
+</p>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.1/Copas-1.0.1.zip" length="4091821" type="application/octet-stream" sparkle:edSignature="mORPL6p0vvBO69ZUxfV1BSoZjyN5hg1kmyCoP0kpZCK7VsHOBhkdm4T6vyxutwW6hrlb69BU+ZjqhUZaSAuJAg=="/>
+        </item>
+        <item>
             <title>1.0.0</title>
             <pubDate>Tue, 01 Sep 2026 17:12:21 +0700</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
