@@ -10,9 +10,16 @@ enum Theme {
 
     // MARK: - Accent
     //
-    // Exactly one. Everything else is monochrome.
-
-    static let accent = Color(red: 0.329, green: 0.341, blue: 0.941)   // #5457F0
+    // Exactly one, and it is ink rather than a hue: flat, and at full
+    // strength rather than a tint, which is what tells it apart from the
+    // hairline rules at 9–14% opacity. Ink on paper in light mode; on the
+    // near-black canvas of dark mode that has to invert to a bright mark, or
+    // it would sit on the page invisibly instead of standing out from it.
+    static let accent = Color(nsColor: NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(calibratedWhite: 0.94, alpha: 1.0)
+            : NSColor(calibratedWhite: 0.09, alpha: 1.0)
+    })
 
     // MARK: - Surfaces
 
@@ -69,6 +76,10 @@ enum Theme {
     static let rowHeight: CGFloat = 56
     static let rowRadius: CGFloat = 5
     static let rowPadding: CGFloat = 10
+
+    /// Gap between rows in the list. Without it, unfocused rows run edge to
+    /// edge with nothing but text to tell them apart.
+    static let rowSpacing: CGFloat = 3
 
     /// The day header pinned above each group of rows.
     static let sectionHeaderHeight: CGFloat = 26

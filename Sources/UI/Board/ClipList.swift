@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The left pane: every clip the current search matches, newest first, grouped
@@ -7,10 +8,20 @@ struct ClipList: View {
     @Bindable var model: BoardModel
     let thumbnails: ThumbnailStore
 
+    /// Tracks the last row tapped and when, so a second click on the same row
+    /// can be treated as a double-click without attaching a `count: 2` tap
+    /// gesture alongside the single-tap one. SwiftUI has to wait out the
+    /// double-click interval before it can commit to the single-tap gesture
+    /// when both are on the same view, which is what made every click feel
+    /// delayed. Tracking the timing by hand keeps the single click instant.
+    @State private var lastTap: (id: ClipCardModel.ID, date: Date)?
+
+    private static let doubleClickInterval: TimeInterval = NSEvent.doubleClickInterval
+
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical) {
-                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
+                LazyVStack(alignment: .leading, spacing: Theme.rowSpacing, pinnedViews: [.sectionHeaders]) {
                     ForEach(model.sections) { section in
                         Section {
                             ForEach(section.cards) { card in
@@ -21,15 +32,22 @@ struct ClipList: View {
                                 )
                                 .equatable()
                                 .id(card.id)
-                                // Two gestures, both cheap to discover: one
-                                // click reads a clip in the pane beside it,
-                                // two puts it back where you were typing.
-                                .onTapGesture(count: 2) {
-                                    model.focusedID = card.id
-                                    model.paste()
-                                }
+                                // One click reads a clip in the pane beside
+                                // it, immediately. A second click on the same
+                                // row within the system double-click interval
+                                // pastes it — tracked by hand rather than
+                                // with a `count: 2` gesture, which would
+                                // force the single click to wait and see.
                                 .onTapGesture {
-                                    model.focusedID = card.id
+                                    let now = Date()
+                                    if let lastTap, lastTap.id == card.id,
+                                       now.timeIntervalSince(lastTap.date) < Self.doubleClickInterval {
+                                        model.paste()
+                                        self.lastTap = nil
+                                    } else {
+                                        model.focusedID = card.id
+                                        lastTap = (card.id, now)
+                                    }
                                 }
                             }
                         } header: {

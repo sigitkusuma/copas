@@ -42,11 +42,10 @@ final class StatusItemController {
 
     private func configureButton() {
         guard let button = statusItem.button else { return }
-        button.image = NSImage(
-            systemSymbolName: "square.on.square.dashed",
-            accessibilityDescription: "Copas"
-        )
-        button.image?.isTemplate = true
+        let icon = NSImage(named: "StatusBarIcon")
+        icon?.accessibilityDescription = "Copas"
+        icon?.isTemplate = true
+        button.image = icon
         button.target = self
         button.action = #selector(buttonClicked)
         button.sendAction(on: [.leftMouseUp, .rightMouseUp])
