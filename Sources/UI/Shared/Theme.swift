@@ -55,7 +55,7 @@ enum Theme {
     /// The panel. Wide enough that the detail pane gets a comfortable measure
     /// beside the list, short enough to still read as a summoned tool rather
     /// than a window you are meant to work in.
-    static let boardWidth: CGFloat = 900
+    static let boardWidth: CGFloat = 760
     static let boardHeight: CGFloat = 580
     static let boardRadius: CGFloat = 10
 
@@ -63,7 +63,7 @@ enum Theme {
     static let boardScreenInset: CGFloat = 40
 
     /// The list pane down the leading edge.
-    static let listWidth: CGFloat = 300
+    static let listWidth: CGFloat = 272
 
     /// A row is two lines of clip plus a line of metadata.
     static let rowHeight: CGFloat = 56

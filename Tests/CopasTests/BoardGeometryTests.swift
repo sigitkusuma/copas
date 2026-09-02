@@ -5,7 +5,7 @@ import Testing
 
 struct BoardGeometryTests {
 
-    static let size = CGSize(width: 900, height: 580)
+    static let size = CGSize(width: 760, height: 580)
 
     /// Centred horizontally, and hanging from the top of the free space — where
     /// the status item that opens it already is, and where the eye is already
@@ -14,7 +14,7 @@ struct BoardGeometryTests {
         let visible = CGRect(x: 0, y: 70, width: 1_512, height: 900)
         let frame = BoardGeometry.frame(in: visible, size: Self.size, inset: 40)
 
-        #expect(frame.width == 900)
+        #expect(frame.width == 760)
         #expect(frame.height == 580)
         #expect(frame.midX == visible.midX)
         #expect(frame.maxY == visible.maxY - 40, "a gap under the menu bar, not flush with it")
@@ -32,10 +32,10 @@ struct BoardGeometryTests {
     /// A panel wider or taller than the screen would hang off it, and on a
     /// laptop beside a projector that is not a hypothetical.
     @Test func aSmallScreenGetsASmallerBoard() {
-        let visible = CGRect(x: 0, y: 0, width: 800, height: 500)
+        let visible = CGRect(x: 0, y: 0, width: 640, height: 500)
         let frame = BoardGeometry.frame(in: visible, size: Self.size, inset: 40)
 
-        #expect(frame.width == 800)
+        #expect(frame.width == 640)
         #expect(frame.height == 500)
         #expect(frame.minX == 0)
         #expect(frame.minY == 0, "the gap collapses rather than pushing the panel off the top")
