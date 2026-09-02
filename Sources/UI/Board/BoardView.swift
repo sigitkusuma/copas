@@ -131,7 +131,7 @@ struct BoardView: View {
             Spacer(minLength: 0)
         }
         .font(.system(size: Theme.metaSize))
-        .foregroundStyle(.quaternary)
+        .foregroundStyle(.secondary)
         .padding(.horizontal, Theme.gutter)
         // Read once as a summary rather than as twelve disconnected glyphs, and
         // skipped entirely when arrowing through clips.
@@ -149,8 +149,8 @@ struct BoardView: View {
 
     private func hint(_ key: String, _ label: String) -> some View {
         HStack(spacing: 4) {
-            Text(key).monospaced()
-            Text(label)
+            Text(key).monospaced().foregroundStyle(.primary)
+            Text(label).foregroundStyle(.secondary)
         }
     }
 
@@ -159,7 +159,8 @@ struct BoardView: View {
     /// How far Page Up and Page Down move: a screenful of the list pane, near
     /// enough, without asking the view how tall it turned out to be.
     private static let pageStep = Int(
-        (Theme.boardHeight - Theme.searchBarHeight - Theme.hintBarHeight) / Theme.rowHeight
+        (Theme.boardHeight - Theme.searchBarHeight - Theme.hintBarHeight)
+            / (Theme.rowHeight + Theme.rowSpacing)
     ) - 1
 
     private func handle(_ event: NSEvent) -> Bool {

@@ -19,9 +19,11 @@ import ImageIO
 import UniformTypeIdentifiers
 
 // MARK: - Palette
+//
+// Flat ink, not a gradient — the plate is one solid colour with a plain
+// shadow, matching the flat single-accent look the rest of the app keeps to.
 
-let gradientTop = CGColor(red: 0.329, green: 0.341, blue: 0.941, alpha: 1)    // #5457F0
-let gradientBottom = CGColor(red: 0.545, green: 0.361, blue: 0.965, alpha: 1) // #8B5CF6
+let plateColor = CGColor(red: 0.09, green: 0.09, blue: 0.09, alpha: 1)  // #171717
 
 // MARK: - Variants
 
@@ -86,40 +88,21 @@ func drawIcon(in ctx: CGContext, pixelSize: CGFloat, variant: Variant) {
     let plate = CGRect(x: 100, y: 100, width: 824, height: 824)
     let platePath = CGPath(roundedRect: plate, cornerWidth: 185, cornerHeight: 185, transform: nil)
 
-    // Shadow first, cast by an opaque copy of the plate. Drawing it under the
-    // gradient rather than with it keeps the gradient's own alpha out of the blur.
+    // Shadow first, cast by an opaque copy of the plate, then the flat fill
+    // on top — no gradient, no sheen. Just ink.
     ctx.saveGState()
     ctx.setShadow(offset: CGSize(width: 0, height: -18),
                   blur: 34,
                   color: CGColor(red: 0, green: 0, blue: 0, alpha: 0.28))
     ctx.addPath(platePath)
-    ctx.setFillColor(gradientTop)
+    ctx.setFillColor(plateColor)
     ctx.fillPath()
     ctx.restoreGState()
 
-    // Gradient body
     ctx.saveGState()
     ctx.addPath(platePath)
-    ctx.clip()
-    let space = CGColorSpaceCreateDeviceRGB()
-    if let gradient = CGGradient(colorsSpace: space,
-                                 colors: [gradientTop, gradientBottom] as CFArray,
-                                 locations: [0, 1]) {
-        ctx.drawLinearGradient(gradient,
-                               start: CGPoint(x: 0, y: plate.maxY),
-                               end: CGPoint(x: 0, y: plate.minY),
-                               options: [])
-    }
-    // Soft highlight across the top edge
-    if let sheen = CGGradient(colorsSpace: space,
-                              colors: [CGColor(red: 1, green: 1, blue: 1, alpha: 0.18),
-                                       CGColor(red: 1, green: 1, blue: 1, alpha: 0)] as CFArray,
-                              locations: [0, 1]) {
-        ctx.drawLinearGradient(sheen,
-                               start: CGPoint(x: 0, y: plate.maxY),
-                               end: CGPoint(x: 0, y: plate.maxY - 420),
-                               options: [])
-    }
+    ctx.setFillColor(plateColor)
+    ctx.fillPath()
     ctx.restoreGState()
 
     // MARK: Viewfinder brackets
@@ -198,6 +181,100 @@ func renderPNG(size: Int, variant: Variant, to path: String) {
     guard CGImageDestinationFinalize(destination) else { fatalError("Could not write \(path)") }
     print("wrote \(path) (\(size)×\(size), \(variant) art)")
 }
+
+// MARK: - Status bar glyph
+//
+// The menu-bar icon needs to read as the same mark as the app icon, not a
+// stand-in SF Symbol — but drawn as a template (solid black, alpha only) with
+// no plate, gradient, or shadow, since AppKit recolors it itself. Proportions
+// are carried over from the compact variant's frame: the brackets and the
+// single bar keep the same position and thickness relative to their own
+// bounding box, just re-based to a small canvas with no icon-plate margin.
+
+func drawStatusBarGlyph(in ctx: CGContext, pixelSize: CGFloat) {
+    let reference: CGFloat = 128
+    let scale = pixelSize / reference
+    ctx.saveGState()
+    ctx.scaleBy(x: scale, y: scale)
+
+    let frame = CGRect(x: 29, y: 29, width: 70, height: 70)
+    let arm: CGFloat = frame.width * (145.0 / 560.0)
+    let strokeWidth: CGFloat = frame.width * (76.0 / 560.0)
+
+    ctx.setStrokeColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+    ctx.setLineWidth(strokeWidth)
+    ctx.setLineCap(.round)
+    ctx.setLineJoin(.round)
+
+    let corners: [[CGPoint]] = [
+        [CGPoint(x: frame.minX, y: frame.maxY - arm),
+         CGPoint(x: frame.minX, y: frame.maxY),
+         CGPoint(x: frame.minX + arm, y: frame.maxY)],
+        [CGPoint(x: frame.maxX - arm, y: frame.maxY),
+         CGPoint(x: frame.maxX, y: frame.maxY),
+         CGPoint(x: frame.maxX, y: frame.maxY - arm)],
+        [CGPoint(x: frame.minX, y: frame.minY + arm),
+         CGPoint(x: frame.minX, y: frame.minY),
+         CGPoint(x: frame.minX + arm, y: frame.minY)],
+        [CGPoint(x: frame.maxX - arm, y: frame.minY),
+         CGPoint(x: frame.maxX, y: frame.minY),
+         CGPoint(x: frame.maxX, y: frame.minY + arm)]
+    ]
+    for corner in corners {
+        ctx.beginPath()
+        ctx.move(to: corner[0])
+        ctx.addLine(to: corner[1])
+        ctx.addLine(to: corner[2])
+        ctx.strokePath()
+    }
+
+    let barWidth = frame.width * (240.0 / 560.0)
+    let barHeight = frame.height * (76.0 / 560.0)
+    let barX = frame.minX + frame.width * (160.0 / 560.0)
+    let barY = frame.minY + frame.height * (242.0 / 560.0)
+    let barRect = CGRect(x: barX, y: barY, width: barWidth, height: barHeight)
+    ctx.addPath(CGPath(roundedRect: barRect,
+                       cornerWidth: barHeight / 2,
+                       cornerHeight: barHeight / 2,
+                       transform: nil))
+    ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+    ctx.fillPath()
+
+    ctx.restoreGState()
+}
+
+func renderStatusBarPNG(size: Int, to path: String) {
+    guard let ctx = CGContext(data: nil,
+                              width: size,
+                              height: size,
+                              bitsPerComponent: 8,
+                              bytesPerRow: 0,
+                              space: CGColorSpaceCreateDeviceRGB(),
+                              bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+        fatalError("Could not create bitmap context for \(size)px")
+    }
+    ctx.setAllowsAntialiasing(true)
+    ctx.interpolationQuality = .high
+
+    drawStatusBarGlyph(in: ctx, pixelSize: CGFloat(size))
+
+    guard let image = ctx.makeImage() else { fatalError("Could not render \(size)px") }
+    let url = URL(fileURLWithPath: path)
+    guard let destination = CGImageDestinationCreateWithURL(url as CFURL,
+                                                           UTType.png.identifier as CFString,
+                                                           1, nil) else {
+        fatalError("Could not open \(path) for writing")
+    }
+    CGImageDestinationAddImage(destination, image, nil)
+    guard CGImageDestinationFinalize(destination) else { fatalError("Could not write \(path)") }
+    print("wrote \(path) (\(size)×\(size), status bar template)")
+}
+
+let statusBarSet = "Resources/Assets.xcassets/StatusBarIcon.imageset"
+// 18pt is Apple's standard menu-bar glyph size.
+renderStatusBarPNG(size: 18, to: "\(statusBarSet)/status_bar_icon.png")
+renderStatusBarPNG(size: 36, to: "\(statusBarSet)/status_bar_icon@2x.png")
+renderStatusBarPNG(size: 54, to: "\(statusBarSet)/status_bar_icon@3x.png")
 
 let iconSet = "Resources/Assets.xcassets/AppIcon.appiconset"
 let iconSizes: [(name: String, size: Int, variant: Variant)] = [

@@ -21,6 +21,10 @@ struct SearchBar: View {
             TextField("Search — try app:xcode, type:image, has:text", text: $model.searchText)
                 .textFieldStyle(.plain)
                 .font(.system(size: Theme.titleSize))
+                // Otherwise the caret falls back to the system accent colour,
+                // which on most Macs is blue — the one spot of hue Theme's
+                // "exactly one accent" would quietly lose.
+                .tint(Theme.accent)
                 .focused($isFocused)
                 // Return, arrows and Escape are the board's, and the key monitor
                 // takes them before they reach here. This is only ever text.
