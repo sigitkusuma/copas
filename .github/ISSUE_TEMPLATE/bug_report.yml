@@ -1,0 +1,47 @@
+name: Bug report
+description: Something in Copas is broken or behaving unexpectedly.
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Include what you expected instead, if it isn't obvious.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: The shortest path that gets you there reliably.
+      placeholder: |
+        1. Copy '...'
+        2. Press ⇧⌘V
+        3. ...
+    validations:
+      required: true
+
+  - type: input
+    id: copas-version
+    attributes:
+      label: Copas version
+      description: Copas menu bar icon → Copas x.y.z, or the DMG/zip you downloaded.
+    validations:
+      required: true
+
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      description: Apple menu →  About This Mac.
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, a clip that triggers it, Console.app logs — whatever narrows it down.
+    validations:
+      required: false
