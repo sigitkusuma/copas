@@ -76,8 +76,8 @@ private struct GeneralSettings: View {
 
             Section("Appearance") {
                 Picker("Board position", selection: $preferences.boardEdge) {
-                    Text("Top of the screen").tag(BoardEdge.top)
-                    Text("Bottom of the screen").tag(BoardEdge.bottom)
+                    Text("Near the top").tag(BoardEdge.top)
+                    Text("Near the bottom").tag(BoardEdge.bottom)
                 }
                 .pickerStyle(.radioGroup)
             }

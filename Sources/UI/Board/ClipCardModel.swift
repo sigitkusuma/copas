@@ -28,6 +28,13 @@ struct ClipCardModel: Identifiable, Equatable, Sendable {
     /// What the card actually draws, which is not always the preview — see the
     /// initialiser.
     let displayText: String
+    /// The clip flattened to one run of text, for a list row two lines tall.
+    ///
+    /// Collapsed once here rather than in the row: the pass over the text
+    /// happens when the section is built instead of on every redraw, and a
+    /// snippet of code arrives in the list as two lines of content rather than
+    /// as one visible line above an empty one.
+    let listTitle: String
     /// The recognised-text caption under an image, excerpted around the match
     /// when there is one.
     let recognizedCaption: String?
@@ -101,6 +108,48 @@ struct ClipCardModel: Identifiable, Equatable, Sendable {
         } else {
             recognizedCaption = nil
         }
+
+        // An image clip has no preview text of its own, so the list shows what
+        // was read out of it. Empty is a legitimate answer for both kinds, and
+        // the row draws a placeholder rather than a blank line.
+        switch record.kind {
+        case .text: listTitle = Self.collapsed(displayText)
+        case .image: listTitle = Self.collapsed(recognizedCaption ?? "")
+        }
+    }
+
+    /// Runs of whitespace — including the newlines that make a code snippet a
+    /// column — flattened to single spaces.
+    ///
+    /// Hand-rolled rather than a regular expression or `components(separatedBy:)`:
+    /// this runs for every card in a five-hundred-row page on every keystroke,
+    /// and one pass with no intermediate array is the difference between a
+    /// keystroke that costs nothing and one that shows.
+    static func collapsed(_ text: String, limit: Int = 200) -> String {
+        var result = ""
+        result.reserveCapacity(limit)
+
+        // Counted rather than asked for: `String.count` walks the whole string,
+        // and asking it once per character would turn a linear pass into a
+        // quadratic one.
+        var written = 0
+        var pendingSpace = false
+
+        for character in text {
+            if character.isWhitespace {
+                pendingSpace = written > 0
+                continue
+            }
+            if pendingSpace {
+                result.append(" ")
+                written += 1
+                pendingSpace = false
+            }
+            result.append(character)
+            written += 1
+            if written >= limit { break }
+        }
+        return result
     }
 
     /// What VoiceOver reads for this card.

@@ -177,6 +177,59 @@ struct ClipCardModelTests {
         )
         #expect(!ClipCardModel(record, now: Self.now).isMonospaced)
     }
+
+    // MARK: - The list row's title
+
+    /// A list row is two lines tall. A snippet of code left with its newlines
+    /// intact arrives as one visible line above an empty one, which wastes half
+    /// the row and hides the part that would identify the clip.
+    @Test func aRowTitleFlattensTheClipToOneRun() {
+        let card = ClipCardModel(text("func main() {\n    print(\"hi\")\n}"), now: Self.now)
+        #expect(card.listTitle == "func main() { print(\"hi\") }")
+    }
+
+    @Test func aRowTitleCollapsesRunsOfWhitespaceAndTrimsTheEnds() {
+        let card = ClipCardModel(text("  lots\t\tof   space  \n"), now: Self.now)
+        #expect(card.listTitle == "lots of space")
+    }
+
+    /// The row shows at most two lines of a 264-point pane. Carrying the whole
+    /// 240-character preview through highlighting to draw sixty of them is work
+    /// nobody sees.
+    @Test func aRowTitleStopsWellBeforeThePreviewDoes() {
+        let card = ClipCardModel(text(String(repeating: "x", count: 240)), now: Self.now)
+        #expect(card.listTitle.count == 200)
+    }
+
+    /// An image clip's preview is empty by construction, so the row shows what
+    /// was read out of the picture instead — and the row draws a placeholder
+    /// when there was nothing to read.
+    @Test func anImageRowTitleComesFromTheRecognizedText() {
+        var record = ClipRecord.image(
+            blobKey: ContentHash.hex(of: "i"),
+            thumbKey: nil,
+            contentHash: ContentHash.hex(of: "i"),
+            byteSize: 1,
+            pixelWidth: 10,
+            pixelHeight: 10
+        )
+        #expect(ClipCardModel(record, now: Self.now).listTitle.isEmpty)
+
+        record.recognizedText = "words in\na picture"
+        #expect(ClipCardModel(record, now: Self.now).listTitle == "words in a picture")
+    }
+
+    /// The row shows the same excerpt the search found, not the head of a clip
+    /// with no visible reason to be in the results.
+    @Test func aRowTitleFollowsTheMatchIntoTheBodyOfTheClip() {
+        let long = String(repeating: "a", count: 300) + "\nneedle here"
+        let record = ClipRecord.text(long, at: Self.now) { _ in "" }
+        let card = ClipCardModel(record, now: Self.now, terms: ["needle"])
+
+        #expect(card.matchSource == .body)
+        #expect(card.listTitle.contains("needle here"))
+        #expect(!card.listTitle.contains("\n"))
+    }
 }
 
 struct ClipSectionBuilderTests {

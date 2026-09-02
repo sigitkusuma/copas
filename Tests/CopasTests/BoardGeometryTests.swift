@@ -5,42 +5,63 @@ import Testing
 
 struct BoardGeometryTests {
 
-    /// Hangs from the menu bar, which is where the status item that opens it
-    /// already is. Measured against the *visible* frame, so it clears the menu
-    /// bar rather than hiding underneath it.
-    @Test func theBoardHangsFromTheTopEdgeAndSpansTheWidth() {
-        let visible = CGRect(x: 0, y: 70, width: 1_512, height: 900)
-        let frame = BoardGeometry.frame(in: visible, height: 420)
+    static let size = CGSize(width: 900, height: 580)
 
-        #expect(frame == CGRect(x: 0, y: 550, width: 1_512, height: 420))
-        #expect(frame.maxY == visible.maxY, "flush with the bottom of the menu bar")
+    /// Centred horizontally, and hanging from the top of the free space — where
+    /// the status item that opens it already is, and where the eye is already
+    /// looking after a keystroke.
+    @Test func theBoardIsCentredAndWeightedToTheTop() {
+        let visible = CGRect(x: 0, y: 70, width: 1_512, height: 900)
+        let frame = BoardGeometry.frame(in: visible, size: Self.size, inset: 40)
+
+        #expect(frame.width == 900)
+        #expect(frame.height == 580)
+        #expect(frame.midX == visible.midX)
+        #expect(frame.maxY == visible.maxY - 40, "a gap under the menu bar, not flush with it")
     }
 
-    /// The other edge still works, because it is a setting waiting to be offered.
-    @Test func theBottomEdgeRestsOnTheDock() {
+    /// The other edge is a setting, so it has to place the panel just as well.
+    @Test func theBottomEdgeSitsAboveTheDock() {
         let visible = CGRect(x: 0, y: 70, width: 1_512, height: 900)
-        let frame = BoardGeometry.frame(in: visible, edge: .bottom, height: 420)
+        let frame = BoardGeometry.frame(in: visible, edge: .bottom, size: Self.size, inset: 40)
 
-        #expect(frame == CGRect(x: 0, y: 70, width: 1_512, height: 420))
+        #expect(frame.minY == visible.minY + 40)
+        #expect(frame.midX == visible.midX)
     }
 
-    @Test func aShortScreenGetsAShorterBoard() {
-        let visible = CGRect(x: 0, y: 0, width: 1_024, height: 300)
-        let frame = BoardGeometry.frame(in: visible, height: 420)
+    /// A panel wider or taller than the screen would hang off it, and on a
+    /// laptop beside a projector that is not a hypothetical.
+    @Test func aSmallScreenGetsASmallerBoard() {
+        let visible = CGRect(x: 0, y: 0, width: 800, height: 500)
+        let frame = BoardGeometry.frame(in: visible, size: Self.size, inset: 40)
 
-        #expect(frame.height == 300)
-        #expect(frame.minY == 0, "a board taller than the screen must not hang off the top")
+        #expect(frame.width == 800)
+        #expect(frame.height == 500)
+        #expect(frame.minX == 0)
+        #expect(frame.minY == 0, "the gap collapses rather than pushing the panel off the top")
+    }
+
+    /// The inset has to give way before the panel does: a screen with less free
+    /// space than the gap asks for still shows the whole panel.
+    @Test func theGapCollapsesBeforeTheBoardDoes() {
+        let visible = CGRect(x: 0, y: 0, width: 1_000, height: 600)
+        let frame = BoardGeometry.frame(in: visible, size: Self.size, inset: 40)
+
+        #expect(frame.height == 580, "the panel keeps its size")
+        #expect(frame.maxY == visible.maxY - 20, "and the 20 points of slack become the gap")
+        #expect(frame.minY == visible.minY, "which leaves it resting on the bottom edge")
     }
 
     /// A second display sits at a non-zero origin, and a board that ignored that
     /// would open on the wrong screen — or half off the edge of one.
     @Test func aScreenToTheRightKeepsItsOrigin() {
         let visible = CGRect(x: 1_512, y: 0, width: 1_920, height: 1_080)
-        let frame = BoardGeometry.frame(in: visible, height: 420)
+        let frame = BoardGeometry.frame(in: visible, size: Self.size, inset: 40)
 
-        #expect(frame.minX == 1_512)
-        #expect(frame.maxY == 1_080)
-        #expect(frame.width == 1_920)
+        #expect(frame.midX == visible.midX)
+        #expect(frame.minX >= visible.minX)
+        #expect(frame.maxX <= visible.maxX)
+        #expect(frame.maxY == visible.maxY - 40)
     }
 
     @Test func theBoardFollowsThePointer() {

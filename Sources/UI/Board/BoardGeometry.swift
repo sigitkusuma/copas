@@ -6,10 +6,10 @@ import Foundation
 /// checked without a window server — the interesting cases are all about screens
 /// that are smaller, taller or positioned differently than the one being
 /// developed on.
-/// Which edge the board is anchored to.
+/// Which half of the screen the board is weighted towards.
 ///
-/// A setting in waiting: the geometry is written for both so Settings can offer
-/// the choice without any of this changing.
+/// It is always centred horizontally; this only decides whether the panel hangs
+/// from the top of the free space or rests on the bottom of it.
 enum BoardEdge: String, Sendable, CaseIterable {
     case top
     case bottom
@@ -17,28 +17,36 @@ enum BoardEdge: String, Sendable, CaseIterable {
 
 enum BoardGeometry {
 
-    /// Anchored to one edge, spanning the full width.
+    /// A fixed-size panel, centred horizontally and weighted to one edge.
     ///
-    /// The top edge by default, tucked under the menu bar. That puts the board
-    /// where the status item that opens it already is, and where the eye is
-    /// already looking after a keystroke — a strip at the bottom means the
-    /// pointer and the attention start at opposite ends of the screen.
+    /// Centred rather than full-bleed because the board is now two panes — a
+    /// list of clips and the whole of the selected one — and a list pane 1,500
+    /// points from its detail pane would make the pairing invisible. Weighted
+    /// upwards by default so it lands where the status item that opens it
+    /// already is, and where the eye is already looking after a keystroke.
     ///
-    /// Measured against the screen's *visible* frame, so the board clears the
-    /// menu bar at the top and rests on the Dock at the bottom, and is never
-    /// taller than the space there is.
+    /// Measured against the screen's *visible* frame, so the panel clears the
+    /// menu bar and the Dock, and is never larger than the space there is.
     static func frame(
         in visibleFrame: CGRect,
         edge: BoardEdge = .top,
-        height: CGFloat = Theme.boardHeight
+        size: CGSize = CGSize(width: Theme.boardWidth, height: Theme.boardHeight),
+        inset: CGFloat = Theme.boardScreenInset
     ) -> CGRect {
-        let height = min(height, visibleFrame.height)
-        return CGRect(
-            x: visibleFrame.minX,
-            y: edge == .top ? visibleFrame.maxY - height : visibleFrame.minY,
-            width: visibleFrame.width,
-            height: height
-        )
+        let width = min(size.width, visibleFrame.width)
+        let height = min(size.height, visibleFrame.height)
+
+        // Rounded, because a panel on a half-point boundary renders its
+        // hairline rules at two different weights on alternating edges.
+        let x = (visibleFrame.minX + (visibleFrame.width - width) / 2).rounded()
+
+        // The gap collapses rather than pushing the panel off a short screen.
+        let gap = min(inset, visibleFrame.height - height)
+        let y = edge == .top
+            ? visibleFrame.maxY - height - gap
+            : visibleFrame.minY + gap
+
+        return CGRect(x: x, y: y.rounded(), width: width, height: height)
     }
 
     /// The screen the board should open on: whichever one the pointer is on.

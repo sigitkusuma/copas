@@ -2,7 +2,8 @@ import AppKit
 import Carbon.HIToolbox
 import SwiftUI
 
-/// The strip of cards, and the keys that drive it.
+/// The board: a list of clips, the whole of the selected one beside it, and the
+/// keys that drive both.
 struct BoardView: View {
 
     @Bindable var model: BoardModel
@@ -15,9 +16,7 @@ struct BoardView: View {
             VStack(spacing: 0) {
                 SearchBar(model: model)
 
-                Rectangle()
-                    .fill(Theme.rule)
-                    .frame(height: 1)
+                ThemeSeparator()
 
                 ZStack {
                     if model.hasNoResults {
@@ -25,14 +24,15 @@ struct BoardView: View {
                     } else if model.isEmpty {
                         emptyState
                     } else {
-                        strip
+                        panes
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
 
-            hints
-                .frame(maxHeight: .infinity, alignment: .bottom)
+                ThemeSeparator()
+
+                hints
+            }
 
             if let card = model.previewedCard {
                 ClipPreviewOverlay(
@@ -44,54 +44,45 @@ struct BoardView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // The hairline goes on the edge facing the rest of the screen, which for
-        // a board hanging from the menu bar is the bottom one.
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Theme.ruleStrong).frame(height: 1)
+        // The panel is borderless and floats over whatever is behind it, so the
+        // hairline runs the whole way round rather than along one edge.
+        .clipShape(RoundedRectangle(cornerRadius: Theme.boardRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.boardRadius, style: .continuous)
+                .strokeBorder(Theme.ruleStrong, lineWidth: 1)
         }
         .animation(Theme.Motion.contentIn, value: model.previewedID)
         .background(KeyMonitor(handler: handle))
     }
 
-    // MARK: - The strip
+    // MARK: - The two panes
 
-    private var strip: some View {
-        ScrollView(.horizontal) {
-            LazyHStack(alignment: .top, spacing: Theme.cardGap, pinnedViews: [.sectionHeaders]) {
-                ForEach(model.sections) { section in
-                    Section {
-                        ForEach(section.cards) { card in
-                            ClipCard(
-                                model: card,
-                                isFocused: card.id == model.focusedID,
-                                thumbnails: thumbnails
-                            )
-                            .equatable()
-                            .id(card.id)
-                            .onTapGesture(count: 2) {
-                                model.focusedID = card.id
-                                model.paste()
-                            }
-                            .onTapGesture {
-                                model.focusedID = card.id
-                            }
-                        }
-                    } header: {
-                        DayHeader(label: section.label)
-                    }
-                }
-            }
-            .padding(.horizontal, Theme.gutter)
-            .padding(.top, Theme.gutter)
-            .padding(.bottom, Theme.hintBarHeight + 12)
-            .scrollTargetLayout()
+    private var panes: some View {
+        HStack(spacing: 0) {
+            ClipList(model: model, thumbnails: thumbnails)
+                .frame(width: Theme.listWidth)
+
+            Rectangle()
+                .fill(Theme.rule)
+                .frame(width: 1)
+
+            detail
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .scrollPosition(id: $model.scrollAnchorID)
-        // Scrolling to a card aligns it with the leading edge — which is exactly
-        // where the pinned day rail sits. Without this inset, every card the
-        // keyboard moves to arrives half-hidden behind the rail.
-        .contentMargins(.leading, Theme.dayRailWidth, for: .scrollContent)
-        .scrollIndicators(.never)
+    }
+
+    @ViewBuilder
+    private var detail: some View {
+        if let card = model.focusedCard {
+            ClipDetail(
+                card: card,
+                terms: model.query.terms,
+                loadText: { model.fullText(for: $0) },
+                loadImage: { model.imageData(for: $0) }
+            )
+        } else {
+            ClipDetailPlaceholder()
+        }
     }
 
     private var emptyState: some View {
@@ -131,9 +122,10 @@ struct BoardView: View {
     /// reads, because it is not there while you are wondering what to press.
     private var hints: some View {
         HStack(spacing: 14) {
+            hint("↑↓", "Move")
             hint("↩", "Paste")
             hint("⌘↩", "Copy")
-            hint("⌘Y", "Preview")
+            hint("⌘Y", "Expand")
             hint("⌘⌫", "Delete")
             hint("⎋", model.isSearching ? "Clear" : "Close")
             Spacer(minLength: 0)
@@ -141,17 +133,18 @@ struct BoardView: View {
         .font(.system(size: Theme.metaSize))
         .foregroundStyle(.quaternary)
         .padding(.horizontal, Theme.gutter)
-        // Read once as a summary rather than as ten disconnected glyphs, and
-        // skipped entirely when arrowing through cards.
+        // Read once as a summary rather than as twelve disconnected glyphs, and
+        // skipped entirely when arrowing through clips.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
-            "Keyboard shortcuts: Return pastes, Command Return copies, "
-            + "Command Y previews, Command Delete deletes, Escape "
+            "Keyboard shortcuts: up and down arrows move through clips, "
+            + "Return pastes, Command Return copies, Command Y expands, "
+            + "Command Delete deletes, Escape "
             + (model.isSearching ? "clears the search" : "closes the board")
         )
         .frame(height: Theme.hintBarHeight)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial)
+        .background(Theme.canvasSubtle)
     }
 
     private func hint(_ key: String, _ label: String) -> some View {
@@ -163,12 +156,18 @@ struct BoardView: View {
 
     // MARK: - Keys
 
+    /// How far Page Up and Page Down move: a screenful of the list pane, near
+    /// enough, without asking the view how tall it turned out to be.
+    private static let pageStep = Int(
+        (Theme.boardHeight - Theme.searchBarHeight - Theme.hintBarHeight) / Theme.rowHeight
+    ) - 1
+
     private func handle(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let hasCommand = flags.contains(.command)
         let hasOption = flags.contains(.option)
 
-        // ⌘1 through ⌘9: paste the nth card without moving through them first.
+        // ⌘1 through ⌘9: paste the nth clip without moving through them first.
         if hasCommand, !hasOption,
            let characters = event.charactersIgnoringModifiers,
            let digit = Int(characters), (1...9).contains(digit) {
@@ -177,10 +176,17 @@ struct BoardView: View {
         }
 
         switch Int(event.keyCode) {
-        case kVK_LeftArrow:
+        // The list runs down the pane now, so the selection moves with ↑ and ↓.
+        // ← and → are deliberately not claimed: they belong to the caret in the
+        // search field, which is where typing goes.
+        case kVK_UpArrow:
             hasOption ? model.moveFocusBySection(-1) : model.moveFocus(by: -1)
-        case kVK_RightArrow:
+        case kVK_DownArrow:
             hasOption ? model.moveFocusBySection(1) : model.moveFocus(by: 1)
+        case kVK_PageUp:
+            model.moveFocus(by: -Self.pageStep)
+        case kVK_PageDown:
+            model.moveFocus(by: Self.pageStep)
         case kVK_Home:
             model.focusFirst()
         case kVK_End:
@@ -190,7 +196,7 @@ struct BoardView: View {
         case kVK_Escape:
             model.escape()
 
-        // Preview and delete carry a modifier because the caret lives in the
+        // Expand and delete carry a modifier because the caret lives in the
         // search field: Space has to type a space and Delete has to delete a
         // character, or searching for anything with a word break in it is
         // impossible. Binding them conditionally on whether the field is empty
