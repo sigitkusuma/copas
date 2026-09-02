@@ -101,7 +101,14 @@ if [ "$DRY_RUN" -eq 0 ]; then
 fi
 
 # The private half is in the keychain; this only proves it is reachable.
-SPARKLE_BIN="$(find "$ROOT/build" -type d -path '*artifacts/sparkle/Sparkle/bin' 2>/dev/null | head -1)"
+#
+# `|| true` for the same reason the `grep -q` above is written the way it is.
+# `find` exits non-zero when build/ does not exist — a fresh clone, or a new
+# worktree — pipefail carries that through `head` into the assignment, and
+# `set -e` then ends the script with no message whatsoever. It looked exactly
+# like a successful preflight that stopped caring, and it meant the release
+# script could not run on a checkout that had never been built.
+SPARKLE_BIN="$(find "$ROOT/build" -type d -path '*artifacts/sparkle/Sparkle/bin' 2>/dev/null | head -1 || true)"
 if [ -z "$SPARKLE_BIN" ]; then
     say "Resolving Sparkle tools"
     xcodebuild -project Copas.xcodeproj -scheme Copas -configuration Release \

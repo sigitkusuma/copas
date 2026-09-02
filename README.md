@@ -5,9 +5,10 @@
 A clipboard manager for macOS. Everything you copy, kept, searchable, and one
 keystroke away.
 
-Copas lives in the menu bar. Press **⇧⌘V** and a strip of cards drops down from
-under the menu bar showing what you have copied, newest first, grouped by day.
-Arrow to one, press Return, and it pastes into whatever you were just typing in.
+Copas lives in the menu bar. Press **⇧⌘V** and a panel opens with everything you
+have copied listed down the left, newest first, grouped by day — and the whole of
+whichever one you are on beside it. Arrow to a clip or click it, press Return, and
+it pastes into whatever you were just typing in.
 
 **⇧⌘2** drags out a region of the screen and puts *the text in it* on your
 clipboard — a receipt, an error dialog, a screenshot somebody sent you.
@@ -31,15 +32,16 @@ clipboard — a receipt, an error dialog, a screenshot somebody sent you.
 | `⇧⌘V` | Show the board |
 | `⇧⌘2` | Capture a region of the screen as text |
 | Type anything | Search |
-| `←` `→` | Move between clips |
-| `⌥←` `⌥→` | Jump a day at a time |
+| `↑` `↓` | Move between clips |
+| `⌥↑` `⌥↓` | Jump a day at a time |
+| `⇞` `⇟` | Move a screenful at a time |
 | `Home` `End` | First and last clip |
 | `↩` | Paste into the app you came from |
 | `⌘↩` | Copy without pasting |
 | `⌘1`–`⌘9` | Paste the nth clip |
-| `⌘Y` | Large preview |
+| `⌘Y` | Expand the clip over the board |
 | `⌘⌫` | Delete the focused clip |
-| `⎋` | Close the preview, then the search, then the board |
+| `⎋` | Close the expanded clip, then the search, then the board |
 
 ## Search
 

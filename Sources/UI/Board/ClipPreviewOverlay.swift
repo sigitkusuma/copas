@@ -1,9 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// The large look at one clip, on Space.
+/// The large look at one clip, on ⌘Y.
 ///
-/// Deliberately modal and deliberately cheap to leave: Space closes it, Escape
+/// Deliberately modal and deliberately cheap to leave: ⌘Y closes it, Escape
 /// closes it, clicking anywhere closes it. It is for reading something, not for
 /// working in.
 struct ClipPreviewOverlay: View {
@@ -50,7 +50,7 @@ struct ClipPreviewOverlay: View {
             Text("·").foregroundStyle(.quaternary)
             Text(card.detail)
             Spacer(minLength: 8)
-            Text("Space to close")
+            Text("⌘Y or Escape to close")
                 .foregroundStyle(.quaternary)
         }
         .font(.system(size: Theme.metaSize))

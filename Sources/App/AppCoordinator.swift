@@ -35,6 +35,12 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
     // The board.
     private var board: BoardWindowController?
 
+    /// `lazy` rather than optional: unlike the board it depends on nothing that
+    /// can fail to open, so there is no state where it is legitimately absent.
+    private lazy var settingsWindow = SettingsWindowController { [preferences] in
+        SettingsScene(preferences: preferences, actions: self.settingsActions)
+    }
+
     // Capture to text.
     private let regionCapture = RegionCapture()
 
@@ -323,12 +329,6 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
     }
 
     private func openSettings() {
-        // The selector moved in macOS 14; the older one silently does nothing.
-        NSApp.activate(ignoringOtherApps: true)
-        if #available(macOS 14.0, *) {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        } else {
-            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-        }
+        settingsWindow.show()
     }
 }

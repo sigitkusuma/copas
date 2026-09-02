@@ -26,9 +26,12 @@ final class BoardModel {
         }
     }
 
-    /// Kept separate from ``focusedID`` because `scrollPosition(id:)` is a two-way
-    /// binding: scrolling by hand writes back into it. Sharing one property would
-    /// mean dragging the strip silently moved the selection.
+    /// Which clip the list should scroll into view, which is not the same
+    /// question as which one is selected.
+    ///
+    /// Kept separate from ``focusedID`` so scrolling stays a one-way consequence
+    /// of moving focus. The list writes nothing back here, and a clip arriving
+    /// under a hand-scrolled list does not yank it anywhere.
     var scrollAnchorID: String?
 
     /// The card shown large, or `nil`.

@@ -48,36 +48,54 @@ enum Theme {
 
     // MARK: - Geometry
     //
-    // The board is a horizontal strip of cards, so unlike the full-bleed rows
-    // of the list design these are discrete objects and do carry a radius —
-    // just a small one. Everything else stays square.
+    // The board is a two-pane panel: a list of clips down the left, the whole
+    // of the selected one on the right. Rows are full-bleed and square — only
+    // the panel itself and a row's selection plate carry a radius.
 
-    static let cardWidth: CGFloat = 264
-    static let cardHeight: CGFloat = 328
-    static let cardGap: CGFloat = 12
-    static let cardRadius: CGFloat = 6
-    static let cardPadding: CGFloat = 14
+    /// The panel. Wide enough that the detail pane gets a comfortable measure
+    /// beside the list, short enough to still read as a summoned tool rather
+    /// than a window you are meant to work in.
+    static let boardWidth: CGFloat = 760
+    static let boardHeight: CGFloat = 580
+    static let boardRadius: CGFloat = 10
 
-    /// Thumbnails are generated at 2x the card width so they stay crisp on
-    /// Retina without decoding the full image.
-    static let thumbnailMaxPixel: CGFloat = cardWidth * 2
+    /// How far the panel sits from the edge it is anchored to.
+    static let boardScreenInset: CGFloat = 40
+
+    /// The list pane down the leading edge.
+    static let listWidth: CGFloat = 272
+
+    /// A row is two lines of clip plus a line of metadata.
+    static let rowHeight: CGFloat = 56
+    static let rowRadius: CGFloat = 5
+    static let rowPadding: CGFloat = 10
+
+    /// The day header pinned above each group of rows.
+    static let sectionHeaderHeight: CGFloat = 26
+
+    /// The thumbnail chip on an image row.
+    static let rowThumbnail: CGFloat = 36
+
+    /// Longest edge for stored thumbnails, in pixels.
+    ///
+    /// Left where it was when the board was a strip of cards: the number is
+    /// baked into every thumbnail already on disk, and the detail pane draws
+    /// the original rather than the thumbnail anyway.
+    static let thumbnailMaxPixel: CGFloat = 528
 
     /// The search field along the top edge.
-    static let searchBarHeight: CGFloat = 32
-
-    /// The pinned day rail down the leading edge of the strip.
-    static let dayRailWidth: CGFloat = 24
+    static let searchBarHeight: CGFloat = 38
 
     /// The row of key hints along the bottom edge.
-    static let hintBarHeight: CGFloat = 26
+    static let hintBarHeight: CGFloat = 28
 
-    /// Derived, not chosen. A height picked independently of the card it holds
-    /// drifts the moment either changes, and the slack shows up as a band of
-    /// empty panel under the cards.
-    static let boardHeight: CGFloat = searchBarHeight + gutter + cardHeight + 12 + hintBarHeight
+    /// Breathing room inside the detail pane.
+    static let detailPadding: CGFloat = 20
+
+    /// The expanded clip that ⌘Y puts over the board.
+    static let cardRadius: CGFloat = 6
     static let controlRadius: CGFloat = 0
     static let chipRadius: CGFloat = 2
-    static let focusRingWidth: CGFloat = 2
 
     // MARK: - Rhythm
 
