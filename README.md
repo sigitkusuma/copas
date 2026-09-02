@@ -93,6 +93,15 @@ open Copas.xcodeproj
 `project.yml` is the source of truth; `Copas.xcodeproj` is generated and not
 checked in. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Contributing
+
+Bug reports and pull requests are welcome — see
+[CONTRIBUTING.md](CONTRIBUTING.md) for the layout, the test suite, and what's
+deliberate about the style. Found a security issue? See
+[SECURITY.md](SECURITY.md) instead of opening a public issue.
+
+This project follows a [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Licence
 
 MIT — see [LICENSE](LICENSE). Copas embeds

@@ -1,5 +1,11 @@
 # Contributing
 
+Bug reports, feature requests, and pull requests all go through
+[Issues](https://github.com/sigitkusuma/copas/issues) and
+[Pull requests](https://github.com/sigitkusuma/copas/pulls). Security issues
+are the one exception — see [SECURITY.md](SECURITY.md) instead. Participation
+is covered by the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Getting set up
 
 ```bash
