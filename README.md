@@ -61,8 +61,8 @@ searched for literally rather than treated as a filter.
 ## Privacy
 
 Everything stays on your Mac. There is no account, no sync, and no analytics.
-Text recognition runs locally through Vision. The only network request Copas ever
-makes is to its own update feed.
+Text recognition runs locally through Live Text and Vision. The only network
+request Copas ever makes is to its own update feed.
 
 Clips live in `~/Library/Application Support/Copas/`, unencrypted, readable by
 anything running as you — the same as any clipboard manager. If that matters for
