@@ -1,18 +1,48 @@
 import CoreGraphics
 import Foundation
 import Vision
+import VisionKit
 
 /// On-device text recognition.
 ///
-/// Everything here runs locally through Vision. No image and no recognised text
-/// leaves the machine, which for a tool that reads whatever happens to be on
-/// screen is not a detail.
+/// Everything here runs locally. No image and no recognised text leaves the
+/// machine, which for a tool that reads whatever happens to be on screen is
+/// not a detail.
 enum TextRecognizer {
 
     /// Reads the text out of an image, in reading order, or `nil` when there is
     /// none to read.
+    ///
+    /// Live Text (`VisionKit.ImageAnalyzer`) goes first where it's available:
+    /// it is the same engine behind handwriting recognition in Notes and
+    /// Photos, and plain `VNRecognizeTextRequest` reads handwriting far worse
+    /// even at its most accurate setting. Live Text needs a Neural Engine, so
+    /// older Intel Macs fall through to Vision instead of getting nothing.
     static func recognizeText(in image: CGImage) async -> String? {
-        let languages = resolvedLanguages
+        let prepared = ImagePreprocessor.prepare(image)
+
+        if ImageAnalyzer.isSupported, let text = await recognizeWithLiveText(in: prepared) {
+            return text
+        }
+        return await recognizeWithVision(in: prepared)
+    }
+
+    private static func recognizeWithLiveText(in image: CGImage) async -> String? {
+        var configuration = ImageAnalyzer.Configuration(.text)
+        configuration.locales = resolvedLiveTextLanguages
+
+        do {
+            let analysis = try await ImageAnalyzer().analyze(image, orientation: .up, configuration: configuration)
+            let text = analysis.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+            return text.isEmpty ? nil : text
+        } catch {
+            Log.app.error("live text recognition failed: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+    }
+
+    private static func recognizeWithVision(in image: CGImage) async -> String? {
+        let languages = resolvedVisionLanguages
 
         return await withCheckedContinuation { continuation in
             let request = VNRecognizeTextRequest { request, error in
@@ -55,9 +85,16 @@ enum TextRecognizer {
 
     /// Resolved once. Probing costs a request, and the answer cannot change
     /// while the app is running.
-    private static let resolvedLanguages: [String] = languages(
+    private static let resolvedVisionLanguages: [String] = languages(
         preferred: Locale.preferredLanguages,
         supported: supportedLanguages()
+    )
+
+    /// Live Text keeps its own supported-language list, separate from
+    /// Vision's — the two engines don't necessarily agree.
+    private static let resolvedLiveTextLanguages: [String] = languages(
+        preferred: Locale.preferredLanguages,
+        supported: ImageAnalyzer.isSupported ? ImageAnalyzer.supportedTextRecognitionLanguages : []
     )
 
     /// What this machine's Vision revision can actually recognise.
