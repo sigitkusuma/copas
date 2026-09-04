@@ -33,6 +33,8 @@ final class Preferences {
         receivesBetaUpdates = defaults.object(forKey: Key.receivesBetaUpdates) as? Bool ?? false
         recognizesTextInImages = defaults.object(forKey: Key.recognizesTextInImages) as? Bool ?? true
         copiesImageWhenNoTextFound = defaults.object(forKey: Key.copiesImageWhenNoTextFound) as? Bool ?? true
+
+        hasCompletedWelcome = defaults.object(forKey: Key.hasCompletedWelcome) as? Bool ?? false
     }
 
     // MARK: - Shortcuts
@@ -115,6 +117,14 @@ final class Preferences {
         didSet { defaults.set(receivesBetaUpdates, forKey: Key.receivesBetaUpdates) }
     }
 
+    // MARK: - Welcome
+
+    /// Set once the welcome window has been dismissed, so it shows on the
+    /// first launch after install and never again.
+    var hasCompletedWelcome: Bool {
+        didSet { defaults.set(hasCompletedWelcome, forKey: Key.hasCompletedWelcome) }
+    }
+
     // MARK: - Login item
 
     /// Not stored here. `SMAppService` keeps the real answer, and a copy in
@@ -149,6 +159,7 @@ final class Preferences {
         static let receivesBetaUpdates = "updates.beta"
         static let recognizesTextInImages = "recognition.automatic"
         static let copiesImageWhenNoTextFound = "recognition.copiesImageWhenNoTextFound"
+        static let hasCompletedWelcome = "welcome.completed"
     }
 
     private func write(_ combination: KeyCombination, forKey key: String) {

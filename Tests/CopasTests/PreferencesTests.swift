@@ -42,6 +42,17 @@ final class PreferencesTests {
         #expect(preferences.recognizesTextInImages)
         #expect(preferences.excludedBundleIDs.isEmpty)
         #expect(preferences.retention == RetentionPolicy.default)
+        #expect(!preferences.hasCompletedWelcome)
+    }
+
+    /// The welcome window should show once, on the first launch after
+    /// install, and never show itself again after that.
+    @Test func welcomeIsNotShownAgainOnceCompleted() {
+        let first = make()
+        first.hasCompletedWelcome = true
+
+        let second = make()
+        #expect(second.hasCompletedWelcome)
     }
 
     @Test func changesSurviveARelaunch() {

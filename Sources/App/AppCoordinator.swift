@@ -41,6 +41,17 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         SettingsScene(preferences: preferences, actions: self.settingsActions)
     }
 
+    private lazy var welcomeWindow: WelcomeWindowController = {
+        let controller = WelcomeWindowController { [weak self] in
+            WelcomeScene(actions: WelcomeActions(
+                requestAccessibilityTrust: { Paster.requestAccessibilityTrust() },
+                finish: { self?.welcomeWindow.close() }
+            ))
+        }
+        controller.onClose = { [weak self] in self?.preferences.hasCompletedWelcome = true }
+        return controller
+    }()
+
     // Capture to text.
     private let regionCapture = RegionCapture()
 
@@ -70,6 +81,12 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             openSettings: { [weak self] in self?.openSettings() },
             quit: { NSApp.terminate(nil) }
         ))
+
+        // Last, so the status item and hotkeys the window's copy talks about
+        // already exist by the time anyone can see it.
+        if !preferences.hasCompletedWelcome {
+            welcomeWindow.show()
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
