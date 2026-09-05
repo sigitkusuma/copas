@@ -13,6 +13,9 @@
 #   Scripts/release.sh v1.0.0           the real thing
 #   Scripts/release.sh v1.0.0 --draft   publish as a draft release
 #
+# --skip-appcast builds, signs, notarises and creates the GitHub release, but
+# stops short of signing the appcast — CI's job, since it never holds the
+# Sparkle private key. Finish on your Mac with Scripts/publish-appcast.sh.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -28,12 +31,14 @@ UPDATES="$ARTIFACTS/updates"
 
 DRY_RUN=0
 DRAFT=0
+SKIP_APPCAST=0
 TAG=""
 
 for argument in "$@"; do
     case "$argument" in
         --dry-run) DRY_RUN=1 ;;
         --draft) DRAFT=1 ;;
+        --skip-appcast) SKIP_APPCAST=1 ;;
         -*) echo "unknown option: $argument" >&2; exit 2 ;;
         *) TAG="$argument" ;;
     esac
@@ -108,22 +113,28 @@ fi
 # `set -e` then ends the script with no message whatsoever. It looked exactly
 # like a successful preflight that stopped caring, and it meant the release
 # script could not run on a checkout that had never been built.
-SPARKLE_BIN="$(find "$ROOT/build" -type d -path '*artifacts/sparkle/Sparkle/bin' 2>/dev/null | head -1 || true)"
-if [ -z "$SPARKLE_BIN" ]; then
-    say "Resolving Sparkle tools"
-    xcodebuild -project Copas.xcodeproj -scheme Copas -configuration Release \
-        -derivedDataPath "$BUILD" -resolvePackageDependencies >/dev/null
-    SPARKLE_BIN="$(find "$ROOT/build" -type d -path '*artifacts/sparkle/Sparkle/bin' | head -1)"
+if [ "$SKIP_APPCAST" -eq 0 ]; then
+    SPARKLE_BIN="$(find "$ROOT/build" -type d -path '*artifacts/sparkle/Sparkle/bin' 2>/dev/null | head -1 || true)"
+    if [ -z "$SPARKLE_BIN" ]; then
+        say "Resolving Sparkle tools"
+        xcodebuild -project Copas.xcodeproj -scheme Copas -configuration Release \
+            -derivedDataPath "$BUILD" -resolvePackageDependencies >/dev/null
+        SPARKLE_BIN="$(find "$ROOT/build" -type d -path '*artifacts/sparkle/Sparkle/bin' | head -1)"
+    fi
+    [ -n "$SPARKLE_BIN" ] || die "could not find Sparkle's bin directory"
+
+    PUBLIC_KEY="$("$SPARKLE_BIN/generate_keys" -p 2>/dev/null || true)"
+    [ -n "$PUBLIC_KEY" ] || die "no Sparkle signing key in the keychain — run $SPARKLE_BIN/generate_keys"
+
+    PLIST_KEY="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$ROOT/Config/Info.plist" 2>/dev/null || true)"
+    [ "$PUBLIC_KEY" = "$PLIST_KEY" ] \
+        || die "the keychain key does not match SUPublicEDKey in Info.plist — updates would be rejected"
+    ok "Sparkle key matches the one compiled into the app"
+else
+    # The private key that would sign the appcast never leaves the release
+    # machine's keychain, deliberately — see Scripts/publish-appcast.sh.
+    ok "skipping the Sparkle key check — the appcast is signed separately"
 fi
-[ -n "$SPARKLE_BIN" ] || die "could not find Sparkle's bin directory"
-
-PUBLIC_KEY="$("$SPARKLE_BIN/generate_keys" -p 2>/dev/null || true)"
-[ -n "$PUBLIC_KEY" ] || die "no Sparkle signing key in the keychain — run $SPARKLE_BIN/generate_keys"
-
-PLIST_KEY="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$ROOT/Config/Info.plist" 2>/dev/null || true)"
-[ "$PUBLIC_KEY" = "$PLIST_KEY" ] \
-    || die "the keychain key does not match SUPublicEDKey in Info.plist — updates would be rejected"
-ok "Sparkle key matches the one compiled into the app"
 
 FEED_URL="$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' "$ROOT/Config/Info.plist" 2>/dev/null || true)"
 [ -n "$FEED_URL" ] || die "SUFeedURL is empty — the updater would have nowhere to look"
@@ -280,16 +291,25 @@ gh release create "$TAG" "$ZIP" "$DMG" "${GH_ARGUMENTS[@]}" \
     || die "could not create the GitHub release"
 ok "release $TAG created with both assets"
 
-say "Updating the appcast"
-"$SPARKLE_BIN/generate_appcast" \
-    --download-url-prefix "https://github.com/sigitkusuma/copas/releases/download/$TAG/" \
-    --link "https://github.com/sigitkusuma/copas" \
-    -o "$ROOT/docs/appcast.xml" \
-    "$UPDATES" \
-    || die "could not generate the appcast"
-ok "docs/appcast.xml written and signed"
+if [ "$SKIP_APPCAST" -eq 0 ]; then
+    say "Updating the appcast"
+    "$SPARKLE_BIN/generate_appcast" \
+        --download-url-prefix "https://github.com/sigitkusuma/copas/releases/download/$TAG/" \
+        --link "https://github.com/sigitkusuma/copas" \
+        -o "$ROOT/docs/appcast.xml" \
+        "$UPDATES" \
+        || die "could not generate the appcast"
+    ok "docs/appcast.xml written and signed"
 
-echo
-echo "    Commit and push docs/appcast.xml to publish the update:"
-echo "        git add docs/appcast.xml && git commit -m 'Release $VERSION' && git push"
-echo
+    echo
+    echo "    Commit and push docs/appcast.xml to publish the update:"
+    echo "        git add docs/appcast.xml && git commit -m 'Release $VERSION' && git push"
+    echo
+else
+    echo
+    echo "    Release $TAG is published with signed, notarised artifacts."
+    echo "    Nothing that can auto-update to it yet — the appcast still needs your"
+    echo "    Sparkle key. Finish on your Mac:"
+    echo "        Scripts/publish-appcast.sh $TAG"
+    echo
+fi

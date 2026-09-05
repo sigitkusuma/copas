@@ -85,14 +85,43 @@ thickens every stroke. The variant is picked by the slot's *point* size, so
 
 ## Releases
 
-`Scripts/release.sh` builds, signs, notarises, staples, publishes and updates the
-appcast, and refuses to continue at the first thing that looks wrong. Try it
-without touching anything:
+Pushing a `v*` tag runs [`.github/workflows/release.yml`](.github/workflows/release.yml):
+it waits on the test suite, then builds, signs, notarises, staples and
+publishes the GitHub release on a macOS runner — no local machine required for
+any of that.
+
+One step is deliberately left out of CI: signing the appcast. `docs/appcast.xml`
+carries a Sparkle EdDSA signature that every installed copy of Copas checks
+before trusting an update, and that private key has no clean rotation — unlike
+a signing certificate or a notarisation credential, there is no way to tell
+copies already in the wild to start trusting a different key. It stays on a
+maintainer's Mac rather than in GitHub's secrets. After the workflow finishes:
 
 ```bash
-Scripts/release.sh --dry-run
+Scripts/publish-appcast.sh v1.0.4
+git add docs/appcast.xml && git commit -m "Release 1.0.4" && git push
 ```
 
-You will need `.env` (copy `.env.example`), a Developer ID certificate, and a
-notarisation profile. Only a maintainer with signing credentials can cut a
-release; everything up to that point works for anyone.
+`Scripts/release.sh` is what the workflow actually runs (`--skip-appcast` is
+the flag that leaves the signing step for the command above). It doubles as
+the manual escape hatch if CI is ever unavailable — same build, signing and
+notarisation, run locally end to end including the appcast:
+
+```bash
+Scripts/release.sh --dry-run     # build and gate, skip notarising
+Scripts/release.sh v1.0.4        # the real thing, appcast included
+```
+
+Either path needs `.env` (copy `.env.example`), a Developer ID certificate,
+and a notarisation profile — checked before anything is compiled, and every
+failure is fatal, on the theory that a release which looked fine on one
+machine and failed Gatekeeper on someone else's is worse than one that never
+shipped.
+
+Only a maintainer with signing credentials can cut a release. CI's copies of
+those credentials live in the repository's Actions secrets:
+`MACOS_CERT_P12_BASE64`, `MACOS_CERT_PASSWORD` (a Developer ID Application
+certificate exported as a `.p12`), and `NOTARY_KEY_P8_BASE64`, `NOTARY_KEY_ID`,
+`NOTARY_ISSUER_ID` (an App Store Connect API key with the Developer role,
+from Users and Access → Integrations in App Store Connect). Everything up to
+a real release — building, testing, a dry run — works for anyone.
