@@ -1,0 +1,119 @@
+name: Release
+
+# A pushed vX.Y.Z tag is the only trigger — nothing here runs on a schedule or
+# a plain push to main, so cutting a release stays a deliberate act:
+#   git tag v1.0.4 && git push origin v1.0.4
+on:
+  push:
+    tags: ["v*"]
+
+# Only one release moves through this pipeline at a time. Two tags pushed
+# close together must not race for the same GitHub Release name or fight over
+# docs/appcast.xml.
+concurrency: release
+
+jobs:
+  # Tests already ran when this commit was on main, but a tag is not
+  # guaranteed to point at a commit that passed them — re-checking here is the
+  # only thing standing between a bad commit and a signed, notarised, publicly
+  # distributed release.
+  test:
+    uses: ./.github/workflows/tests.yml
+
+  release:
+    name: Build, sign, notarise, publish
+    needs: test
+    runs-on: macos-26
+    # gh release create needs write access; the default token is read-only
+    # unless a workflow asks for more.
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select the newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: build/dd/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('project.yml') }}
+          restore-keys: spm-${{ runner.os }}-
+
+      # Codesigning needs a real, unlocked keychain — the CI runner's default
+      # one is neither. Everything here is torn down in the cleanup step below,
+      # keychain included, whether or not the release succeeds.
+      - name: Import the signing certificate
+        env:
+          MACOS_CERT_P12_BASE64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/release.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          # Search this keychain first, but keep the runner's default ones
+          # reachable too — codesign still needs Apple's own root certificates.
+          # Deliberately unquoted: each existing keychain path must land as its
+          # own argument, not one combined string.
+          # shellcheck disable=SC2046
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+          security default-keychain -s "$KEYCHAIN_PATH"
+
+          CERT_PATH="$RUNNER_TEMP/cert.p12"
+          echo "$MACOS_CERT_P12_BASE64" | base64 --decode > "$CERT_PATH"
+          security import "$CERT_PATH" -k "$KEYCHAIN_PATH" -P "$MACOS_CERT_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s \
+            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          rm -f "$CERT_PATH"
+
+          SIGN_IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+            | grep -o '"Developer ID Application:[^"]*"' | head -1 | tr -d '"')"
+          [ -n "$SIGN_IDENTITY" ] || { echo "no Developer ID Application identity in the imported certificate" >&2; exit 1; }
+          echo "SIGN_IDENTITY=$SIGN_IDENTITY" >> "$GITHUB_ENV"
+          echo "imported: $SIGN_IDENTITY"
+
+      - name: Store notarisation credentials
+        env:
+          NOTARY_KEY_P8_BASE64: ${{ secrets.NOTARY_KEY_P8_BASE64 }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: |
+          KEY_PATH="$RUNNER_TEMP/notary_key.p8"
+          echo "$NOTARY_KEY_P8_BASE64" | base64 --decode > "$KEY_PATH"
+          xcrun notarytool store-credentials copas-ci \
+            --key "$KEY_PATH" \
+            --key-id "$NOTARY_KEY_ID" \
+            --issuer "$NOTARY_ISSUER_ID" \
+            --keychain "$KEYCHAIN_PATH"
+          rm -f "$KEY_PATH"
+
+      # Scripts/release.sh reads these rather than taking them as arguments —
+      # matching how it works for a person releasing from their own Mac.
+      - name: Write release.sh's configuration
+        run: |
+          cat > .env <<EOF
+          SIGN_IDENTITY="$SIGN_IDENTITY"
+          NOTARY_PROFILE="copas-ci"
+          EOF
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: Scripts/release.sh "${{ github.ref_name }}" --skip-appcast
+
+      - name: Remove the temporary keychain
+        if: always()
+        run: security delete-keychain "$KEYCHAIN_PATH" || true

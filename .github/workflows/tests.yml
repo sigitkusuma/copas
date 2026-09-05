@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Lets release.yml require this workflow to pass on the tagged commit
+  # before it signs and publishes anything.
+  workflow_call:
 
 # A second push to the same branch makes the first run irrelevant.
 concurrency:
@@ -74,12 +77,13 @@ jobs:
 
       # Two releases were broken by shell bugs that a reader missed: an empty
       # array expanded under `set -u`, and a pipeline whose exit status came
-      # from the wrong end. The script is only exercised by hand, so this is the
-      # only thing that reads it on every change.
+      # from the wrong end. Both scripts are only exercised by hand — one on a
+      # release machine, one in CI's own release job — so this is the only
+      # thing that reads either of them on every change.
       - name: Syntax
-        run: bash -n Scripts/release.sh
+        run: bash -n Scripts/release.sh Scripts/publish-appcast.sh
 
       - name: ShellCheck
         run: |
           sudo apt-get update -qq && sudo apt-get install -y shellcheck
-          shellcheck --severity=warning Scripts/release.sh
+          shellcheck --severity=warning Scripts/release.sh Scripts/publish-appcast.sh
