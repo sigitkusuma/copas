@@ -202,13 +202,37 @@ inspection parts of this yourself — see hard rule 3.
 
 ## Branch protection and repo settings
 
-Not currently configured on `main`. Check with:
+Configured on `main` as of 2026-09-05. Verify the live state before relying on
+this description — it can drift:
 ```bash
-gh api repos/sigitkusuma/copas/branches/main/protection 2>&1
+gh api repos/sigitkusuma/copas/branches/main/protection -q \
+  '{status_checks: .required_status_checks.contexts, reviews: .required_pull_request_reviews.required_approving_review_count, enforce_admins: .enforce_admins.enabled, force_push: .allow_force_pushes.enabled, deletions: .allow_deletions.enabled}'
 ```
-(a 404 means it's unset). This agent can set up "require a PR, 1 approval,
-and the `test` status check" via `gh api ... -X PUT` when the user explicitly
-asks for it — never proactively, since it changes who can merge and how.
+Current settings:
+
+| Setting | Value |
+|---|---|
+| Require a pull request before merging | Yes |
+| Required status checks | `Test on macOS`, `Check the release script` (both from `tests.yml`) |
+| Strict (branch must be up to date) | Yes |
+| Required approving reviews | 1 |
+| Enforce on administrators | **No** |
+| Allow force pushes / branch deletion | No / No |
+
+**`enforce_admins: false` is deliberate, not an oversight.** `sigitkusuma` is
+the sole collaborator on this repo, and GitHub never counts a PR author's own
+approval toward the required-review count — enforcing this rule on admins too
+would make every one of the maintainer's own PRs permanently unmergeable, with
+no one else able to approve them. Exempting admins keeps the gate meaningful
+for outside contributors (their PRs need the checks green and a review) while
+leaving the maintainer able to merge their own work. Don't "fix" this to
+`enforce_admins: true` without confirming a second maintainer actually exists
+to approve PRs — otherwise that change locks the repo's own owner out of it.
+
+Changing any of this (adding a second collaborator, tightening admin
+enforcement, adding required signatures, etc.) is a `gh api ... -X PUT`
+against the same endpoint — only do it when the user explicitly asks for that
+specific change, never proactively.
 
 ## What not to add without being asked
 
