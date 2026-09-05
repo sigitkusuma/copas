@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Runs Scripts/appcast-watcher.sh every 15 minutes. Copy this file to
+    ~/Library/LaunchAgents/com.sigitkusuma.copas.appcast-watcher.plist and
+    replace every /path/to/appcast-watcher-clone below with the real path —
+    see Scripts/launchd/README.md.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.sigitkusuma.copas.appcast-watcher</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/path/to/appcast-watcher-clone/Scripts/appcast-watcher.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/path/to/appcast-watcher-clone</string>
+
+    <key>StartInterval</key>
+    <integer>900</integer>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/copas-appcast-watcher.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/copas-appcast-watcher.log</string>
+</dict>
+</plist>
