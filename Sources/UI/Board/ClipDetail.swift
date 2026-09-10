@@ -82,23 +82,57 @@ struct ClipDetail: View {
 
             Spacer(minLength: 8)
 
-            Button {
-                onTogglePin()
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: card.isPinned ? "pin.fill" : "pin")
-                        .foregroundStyle(card.isPinned ? Theme.bookmark : .secondary)
-                    Text(card.isPinned ? "Pinned" : "Pin")
-                        .foregroundStyle(card.isPinned ? Theme.bookmark : .secondary)
+            HStack(spacing: 8) {
+                if card.kind == .text && !text.isEmpty {
+                    ShareLink(item: text) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Share clip")
+                } else if card.kind == .image, let image {
+                    ShareLink(item: Image(nsImage: image), preview: SharePreview("Image clip", image: Image(nsImage: image))) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Share image")
                 }
-                .font(.system(size: Theme.metaSize))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(card.isPinned ? Theme.bookmark.opacity(0.12) : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                Button {
+                    if card.kind == .text {
+                        ClipExportUtility.exportText(text)
+                    } else if card.kind == .image, let data = loadImage(card) {
+                        ClipExportUtility.exportImage(data: data)
+                    }
+                } label: {
+                    Image(systemName: "arrow.down.doc")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Export as file...")
+
+                Button {
+                    onTogglePin()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: card.isPinned ? "pin.fill" : "pin")
+                            .foregroundStyle(card.isPinned ? Theme.bookmark : .secondary)
+                        Text(card.isPinned ? "Pinned" : "Pin")
+                            .foregroundStyle(card.isPinned ? Theme.bookmark : .secondary)
+                    }
+                    .font(.system(size: Theme.metaSize))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(card.isPinned ? Theme.bookmark.opacity(0.12) : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+                .buttonStyle(.plain)
+                .help(card.isPinned ? "Unpin clip (⌘P)" : "Pin clip (⌘P)")
             }
-            .buttonStyle(.plain)
-            .help(card.isPinned ? "Unpin clip (⌘P)" : "Pin clip (⌘P)")
         }
         .font(.system(size: Theme.metaSize))
         .foregroundStyle(.tertiary)

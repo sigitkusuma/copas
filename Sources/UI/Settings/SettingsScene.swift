@@ -14,6 +14,7 @@ struct SettingsActions {
     var clearHistory: () -> Void = {}
     var checkForUpdates: () -> Void = {}
     var applyUpdateSettings: () -> Void = {}
+    var fetchStats: () -> ClipboardStats = { ClipboardStats() }
 }
 
 struct SettingsScene: View {
@@ -31,6 +32,9 @@ struct SettingsScene: View {
 
             RecognitionSettings(preferences: preferences)
                 .tabItem { Label("Text", systemImage: "text.viewfinder") }
+
+            StatsSettings(actions: actions)
+                .tabItem { Label("Stats", systemImage: "chart.bar") }
 
             AboutSettings(preferences: preferences, actions: actions)
                 .tabItem { Label("About", systemImage: "info.circle") }
