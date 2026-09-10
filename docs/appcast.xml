@@ -3,6 +3,49 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.0.6</title>
+            <pubDate>Fri, 11 Sep 2026 00:37:23 +0700</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>7</sparkle:version>
+            <sparkle:shortVersionString>1.0.6</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.0.6</h2>
+
+<p>
+  A major productivity release transforming Copas into a versatile clipboard powerhouse.
+</p>
+
+<ul>
+  <li>
+    <strong>Pinned Clips (⌘P):</strong> Keep your essential snippets permanent. Pinned clips are immune to retention pruning, highlighted with a warm gold pin badge, and organized into a dedicated section at the top of the board. Filter them anytime with <code>is:pinned</code>.
+  </li>
+  <li>
+    <strong>Multi-Select &amp; Merge (⌘M):</strong> Select multiple clips with ⌘-click or Shift-click, choose your delimiter (paragraphs, newlines, commas, tabs, or spaces), and merge them directly to the pasteboard or export them together.
+  </li>
+  <li>
+    <strong>Text Transforms (⌘T):</strong> Apply 15 instant formatting transformations to any text clip on the fly — case conversions, whitespace trimming, line sorting, duplicate line removal, line numbering, URL &amp; Base64 encoding/decoding, JSON formatting/minification, quote wrapping, and HTML escaping.
+  </li>
+  <li>
+    <strong>Smart Filter Pills:</strong> Instant one-tap filter pills beneath search for All, Pinned, Links, Code, Images, and Colors.
+  </li>
+  <li>
+    <strong>Native Share Sheet &amp; File Export:</strong> Share clips directly via AirDrop, Messages, Mail, Notes, or Reminders, or export them to disk with automatic file extension detection (.txt, .json, .md, .png).
+  </li>
+  <li>
+    <strong>Right-Click Context Menu:</strong> Right-click any clip in the list to share, export, paste, copy, pin, or delete without opening the detail pane.
+  </li>
+  <li>
+    <strong>Clipboard Insights &amp; Statistics:</strong> Explore your clipboard habits in the new Stats tab in Settings (⌘,) — total history, text vs. image breakdown, storage footprint, and top source applications with app icons and proportional charts.
+  </li>
+</ul>
+
+<p>
+  Your clips, settings and shortcuts are untouched by this update.
+</p>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.6/Copas-1.0.6.zip" length="4241571" type="application/octet-stream" sparkle:edSignature="HN5mpxRzll1TNYMWy3QSj91bhbiamufvBQYmPqKZtMO76F58CnkPx9g+g9Dn68hDpA93PoqE+802W212MW4qCw=="/>
+        </item>
+        <item>
             <title>1.0.5</title>
             <pubDate>Thu, 10 Sep 2026 15:43:10 +0700</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -53,52 +96,6 @@
 </p>
 ]]></description>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.4/Copas-1.0.4.zip" length="3979212" type="application/octet-stream" sparkle:edSignature="ZxkOj7p4r8lYqIdr6GgtXEN55QPe69nj0GBzfjvCMwa5ECKPW7rWYfUoGQK4ks9Q4GZidi23RzDX7rIf74k1CA=="/>
-        </item>
-        <item>
-            <title>1.0.3</title>
-            <pubDate>Thu, 03 Sep 2026 22:14:23 +0700</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>4</sparkle:version>
-            <sparkle:shortVersionString>1.0.3</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.0.3</h2>
-
-<p>
-  A round of fit-and-finish on the board.
-</p>
-
-<ul>
-  <li>
-    <strong>Clicking a clip is instant.</strong> Selecting one used to wait out
-    the double-click interval before it registered, because a single click and
-    a double click were competing gestures on the same row. A click now selects
-    immediately; a second click still pastes.
-  </li>
-  <li>
-    <strong>Clips in the list have room to breathe</strong> instead of running
-    edge to edge.
-  </li>
-  <li>
-    <strong>The keyboard-shortcut legend along the bottom is legible</strong>
-    rather than nearly the same colour as the background behind it.
-  </li>
-  <li>
-    <strong>The menu bar icon is Copas's own mark</strong> now, not a generic
-    system glyph standing in for it.
-  </li>
-  <li>
-    <strong>A new look for the mark itself:</strong> flat black ink in place of
-    the blue-violet gradient, carried through the whole app as the one accent
-    colour — the selection bar, search highlights, and the search field's own
-    caret.
-  </li>
-</ul>
-
-<p>
-  Your clips, settings and shortcuts are untouched by this update.
-</p>
-]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.3/Copas-1.0.3.zip" length="3924628" type="application/octet-stream" sparkle:edSignature="szgW1sdDwa+viT/f/fKilCRcgabx+tG43sPXETnTpzgtlYrYksKBvWDwYFu/l6TyG4ApW61Wmc+/XnX4g1HwCg=="/>
         </item>
     </channel>
 </rss>
