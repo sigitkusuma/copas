@@ -21,7 +21,7 @@ final class UpdateCoordinator: NSObject {
         controller = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: self,
-            userDriverDelegate: nil
+            userDriverDelegate: self
         )
         controller.updater.automaticallyChecksForUpdates = preferences.checksForUpdatesAutomatically
     }
@@ -65,6 +65,15 @@ extension UpdateCoordinator: SPUUpdaterDelegate {
     /// then the update had already been chosen.
     nonisolated func allowedChannels(for updater: SPUUpdater) -> Set<String> {
         channel.wantsBeta ? ["beta"] : []
+    }
+}
+
+extension UpdateCoordinator: SPUStandardUserDriverDelegate {
+
+    /// Tells Sparkle that Copas manages background update reminders gracefully
+    /// without unexpectedly stealing focus or popping up intrusive alerts.
+    var supportsGentleScheduledUpdateReminders: Bool {
+        true
     }
 }
 

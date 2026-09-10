@@ -358,8 +358,16 @@ final class BoardModel {
         activate(focusedCard, paste: true)
     }
 
+    func paste(_ card: ClipCardModel) {
+        activate(card, paste: true)
+    }
+
     func copyWithoutPasting() {
         activate(focusedCard, paste: false)
+    }
+
+    func copyWithoutPasting(_ card: ClipCardModel) {
+        activate(card, paste: false)
     }
 
     /// Applies `transform` to the focused clip's full text and writes the
@@ -388,19 +396,26 @@ final class BoardModel {
     }
 
     func deleteFocused() {
-        guard let card = focusedCard, let index = focusedIndex else { return }
+        guard let card = focusedCard else { return }
+        delete(id: card.id)
+    }
 
-        // Choose where the keyboard lands before the row disappears, so focus
-        // moves to the neighbour rather than snapping back to the newest clip.
+    func delete(id: ClipCardModel.ID) {
         let cards = cards
-        let successor = cards.indices.contains(index + 1)
-            ? cards[index + 1].id
-            : (index > 0 ? cards[index - 1].id : nil)
+        let index = cards.firstIndex(where: { $0.id == id })
+        let successor = index.flatMap { idx in
+            cards.indices.contains(idx + 1)
+                ? cards[idx + 1].id
+                : (idx > 0 ? cards[idx - 1].id : nil)
+        }
 
         do {
-            _ = try clips.delete(ids: [card.id])
-            focusedID = successor
-            if previewedID == card.id { previewedID = nil }
+            _ = try clips.delete(ids: [id])
+            if focusedID == id {
+                focusedID = successor
+            }
+            selectedIDs.remove(id)
+            if previewedID == id { previewedID = nil }
         } catch {
             Log.store.error("could not delete a clip: \(error, privacy: .public)")
             NSSound.beep()

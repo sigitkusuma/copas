@@ -121,7 +121,6 @@ struct StatsSettings: View {
 
     private func appRow(_ app: AppClipCount) -> some View {
         let maxCount = max(stats.topApps.first?.count ?? 1, 1)
-        let ratio = CGFloat(app.count) / CGFloat(maxCount)
 
         return HStack(spacing: 8) {
             if let icon = AppIconCache.shared.icon(for: app.bundleID) {
@@ -140,19 +139,9 @@ struct StatsSettings: View {
                 .frame(width: 100, alignment: .leading)
                 .lineLimit(1)
 
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.primary.opacity(0.06))
-                        .frame(height: 6)
-
-                    Capsule()
-                        .fill(Theme.accent.opacity(0.7))
-                        .frame(width: max(geo.size.width * ratio, 6), height: 6)
-                }
-                .frame(maxHeight: .infinity, alignment: .center)
-            }
-            .frame(height: 16)
+            ProgressView(value: Double(app.count), total: Double(maxCount))
+                .progressViewStyle(.linear)
+                .tint(Theme.accent.opacity(0.85))
 
             Text("\(app.count)")
                 .font(.system(size: 11, weight: .medium).monospacedDigit())

@@ -439,4 +439,37 @@ final class BoardModelTests {
         model.deleteFocused()
         #expect(model.previewedCard == nil)
     }
+
+    @Test func pasteAndCopyTargetedCard() throws {
+        try insert(["first", "second"])
+        model.reload()
+
+        var activatedID: String?
+        var didPaste: Bool?
+        model.onActivate = { record, paste in
+            activatedID = record.id
+            didPaste = paste
+        }
+
+        let secondCard = model.cards[1]
+        model.paste(secondCard)
+        #expect(activatedID == secondCard.id)
+        #expect(didPaste == true)
+
+        model.copyWithoutPasting(secondCard)
+        #expect(activatedID == secondCard.id)
+        #expect(didPaste == false)
+    }
+
+    @Test func deleteByIDRemovesSpecificClip() throws {
+        try insert(["first", "second", "third"])
+        model.reload()
+
+        let secondCard = model.cards[1]
+        model.delete(id: secondCard.id)
+        model.reload()
+
+        #expect(model.cards.map(\.preview) == ["first", "third"])
+    }
 }
+
