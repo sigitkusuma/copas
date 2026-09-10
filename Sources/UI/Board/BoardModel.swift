@@ -59,7 +59,7 @@ final class BoardModel {
     /// opening — the caret in the search field — watch this instead.
     private(set) var isVisibleGeneration = 0
 
-    var isSearching: Bool { !query.isEmpty }
+    var isSearching: Bool { !query.isEmpty || activeFilter != .all }
 
     var isEmpty: Bool { isLoaded && sections.isEmpty }
 

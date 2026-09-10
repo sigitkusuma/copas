@@ -372,7 +372,21 @@ final class ClipRepository: Sendable {
             case .links:
                 conditions.append("clip.kind = 0 AND (clip.preview LIKE '%http://%' OR clip.preview LIKE '%https://%')")
             case .colors:
-                conditions.append("clip.kind = 0 AND clip.preview LIKE '#%'")
+                conditions.append("""
+                    clip.kind = 0 AND (
+                        (
+                            clip.preview LIKE '#%'
+                            AND LENGTH(TRIM(clip.preview)) BETWEEN 4 AND 9
+                            AND clip.preview NOT LIKE '% %'
+                            AND clip.preview NOT LIKE '%\n%'
+                            AND clip.preview NOT LIKE '%\t%'
+                        )
+                        OR clip.preview LIKE 'rgb(%'
+                        OR clip.preview LIKE 'rgba(%'
+                        OR clip.preview LIKE 'hsl(%'
+                        OR clip.preview LIKE 'hsla(%'
+                    )
+                    """)
             case .code:
                 conditions.append("clip.kind = 0 AND (clip.preview LIKE '%{%' OR clip.preview LIKE '%;%' OR clip.preview LIKE '%func %' OR clip.preview LIKE '%const %' OR clip.preview LIKE '%let %' OR clip.preview LIKE '%var %' OR clip.preview LIKE '%def %' OR clip.preview LIKE '%import %' OR clip.preview LIKE '%class %')")
             }
