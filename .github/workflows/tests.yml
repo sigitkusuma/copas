@@ -77,13 +77,14 @@ jobs:
 
       # Two releases were broken by shell bugs that a reader missed: an empty
       # array expanded under `set -u`, and a pipeline whose exit status came
-      # from the wrong end. Both scripts are only exercised by hand — one on a
-      # release machine, one in CI's own release job — so this is the only
-      # thing that reads either of them on every change.
+      # from the wrong end. All three scripts are only exercised by hand — on
+      # a release machine, in CI's own release job, or by an unattended
+      # launchd job — so this is the only thing that reads any of them on
+      # every change.
       - name: Syntax
-        run: bash -n Scripts/release.sh Scripts/publish-appcast.sh
+        run: bash -n Scripts/release.sh Scripts/publish-appcast.sh Scripts/appcast-watcher.sh
 
       - name: ShellCheck
         run: |
           sudo apt-get update -qq && sudo apt-get install -y shellcheck
-          shellcheck --severity=warning Scripts/release.sh Scripts/publish-appcast.sh
+          shellcheck --severity=warning Scripts/release.sh Scripts/publish-appcast.sh Scripts/appcast-watcher.sh

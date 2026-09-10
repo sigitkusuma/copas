@@ -125,3 +125,9 @@ certificate exported as a `.p12`), and `NOTARY_KEY_P8_BASE64`, `NOTARY_KEY_ID`,
 `NOTARY_ISSUER_ID` (an App Store Connect API key with the Developer role,
 from Users and Access → Integrations in App Store Connect). Everything up to
 a real release — building, testing, a dry run — works for anyone.
+
+`Scripts/publish-appcast.sh` can also run unattended instead of by hand — see
+[`Scripts/launchd/README.md`](Scripts/launchd/README.md) for a `launchd` job
+that notices a new GitHub Release and signs the appcast for it automatically.
+It still runs on a Mac holding the Sparkle key; nothing about that credential
+changes.
