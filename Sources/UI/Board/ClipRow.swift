@@ -10,25 +10,18 @@ struct ClipRow: View, @MainActor Equatable {
 
     let model: ClipCardModel
     let isFocused: Bool
+    var isSelected: Bool = false
     let thumbnails: ThumbnailStore
 
     @State private var isHovered = false
 
-    /// Only the two things a row can actually look different for.
-    ///
-    /// `thumbnails` is a constant for the board's lifetime and comparing it
-    /// would mean nothing; leaving it out is what lets this be an
-    /// `EquatableView` and skip the two hundred rows that did not change when
-    /// focus moved by one.
-    ///
-    /// A main-actor-isolated conformance: SwiftUI only ever compares views while
-    /// updating, which is on the main actor, and spelling that out is what lets
-    /// the comparison read the view's own stored properties.
+    /// Only the things a row can actually look different for.
     static func == (lhs: ClipRow, rhs: ClipRow) -> Bool {
-        lhs.model == rhs.model && lhs.isFocused == rhs.isFocused
+        lhs.model == rhs.model && lhs.isFocused == rhs.isFocused && lhs.isSelected == rhs.isSelected
     }
 
     var body: some View {
+        let active = isFocused || isSelected
         HStack(spacing: 10) {
             if model.kind == .image {
                 thumbnail
@@ -45,12 +38,12 @@ struct ClipRow: View, @MainActor Equatable {
         .background(alignment: .leading) {
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: Theme.rowRadius, style: .continuous)
-                    .fill(isFocused ? Theme.selection : (isHovered ? Theme.hover : Color.clear))
+                    .fill(active ? Theme.selection : (isHovered ? Theme.hover : Color.clear))
 
                 // The one mark that survives at a glance. A tint alone is easy
                 // to lose against a highlighted search term; a bar at the edge
                 // is not.
-                if isFocused {
+                if active {
                     Rectangle()
                         .fill(Theme.accent)
                         .frame(width: 2)
@@ -60,12 +53,12 @@ struct ClipRow: View, @MainActor Equatable {
         }
         .contentShape(Rectangle())
         .onHover { isHovered = $0 }
-        .animation(Theme.Motion.selection, value: isFocused)
+        .animation(Theme.Motion.selection, value: active)
         .animation(Theme.Motion.hover, value: isHovered)
         // One element, not five. See `accessibilityDescription`.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.accessibilityDescription)
-        .accessibilityAddTraits(isFocused ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAddTraits(active ? [.isButton, .isSelected] : .isButton)
         .accessibilityHint("Return pastes this clip")
     }
 
@@ -128,6 +121,12 @@ struct ClipRow: View, @MainActor Equatable {
                 Image(systemName: "text.magnifyingglass")
                     .font(.system(size: 9))
                     .foregroundStyle(Theme.accent)
+            }
+
+            if model.isPinned {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 8))
+                    .foregroundStyle(Theme.bookmark)
             }
 
             Spacer(minLength: 0)

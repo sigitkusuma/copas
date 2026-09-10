@@ -27,18 +27,28 @@ struct ClipQuery: Equatable, Sendable {
     /// Only clips carrying recognised text.
     var requiresRecognizedText: Bool
 
+    /// When non-nil, restricts to pinned (`true`) or unpinned (`false`) clips.
+    var isPinned: Bool?
+
+    /// Optional smart filter category.
+    var smartFilter: SmartFilter?
+
     init(
         match: String? = nil,
         kinds: Set<ClipKind> = [],
         bundleIDs: Set<String> = [],
         appFragment: String? = nil,
-        requiresRecognizedText: Bool = false
+        requiresRecognizedText: Bool = false,
+        isPinned: Bool? = nil,
+        smartFilter: SmartFilter? = nil
     ) {
         self.match = match
         self.kinds = kinds
         self.bundleIDs = bundleIDs
         self.appFragment = appFragment
         self.requiresRecognizedText = requiresRecognizedText
+        self.isPinned = isPinned
+        self.smartFilter = smartFilter
     }
 
     static let all = ClipQuery()
@@ -51,6 +61,7 @@ struct ClipQuery: Equatable, Sendable {
     var isUnfiltered: Bool {
         match == nil && kinds.isEmpty && bundleIDs.isEmpty
             && appFragment == nil && !requiresRecognizedText
+            && isPinned == nil && (smartFilter == nil || smartFilter == .all)
     }
 
     /// Turns typed text into a safe FTS5 expression.

@@ -27,6 +27,9 @@ struct SearchQuery: Equatable, Sendable {
     /// `has:text` — only clips carrying recognised text.
     private(set) var requiresRecognizedText = false
 
+    /// `is:pinned` / `is:starred` — only pinned clips.
+    private(set) var isPinned: Bool?
+
     init(_ raw: String) {
         for token in raw.split(whereSeparator: \.isWhitespace).map(String.init) {
             let lowercased = token.lowercased()
@@ -50,6 +53,13 @@ struct SearchQuery: Equatable, Sendable {
                 default: terms.append(lowercased)
                 }
 
+            } else if let value = Self.value(after: "is:", in: lowercased) {
+                switch value {
+                case "pinned", "star", "starred": isPinned = true
+                case "unpinned": isPinned = false
+                default: terms.append(lowercased)
+                }
+
             } else {
                 terms.append(lowercased)
             }
@@ -62,7 +72,7 @@ struct SearchQuery: Equatable, Sendable {
     }
 
     var isEmpty: Bool {
-        terms.isEmpty && app == nil && kind == nil && !requiresRecognizedText
+        terms.isEmpty && app == nil && kind == nil && !requiresRecognizedText && isPinned == nil
     }
 
     /// Turns the parsed search into something the repository can run.
@@ -75,7 +85,8 @@ struct SearchQuery: Equatable, Sendable {
             match: ClipQuery.matchExpression(forTerms: terms),
             kinds: kind.map { [$0] } ?? [],
             appFragment: app,
-            requiresRecognizedText: requiresRecognizedText
+            requiresRecognizedText: requiresRecognizedText,
+            isPinned: isPinned
         )
     }
 }

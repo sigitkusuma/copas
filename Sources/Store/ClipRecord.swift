@@ -72,6 +72,8 @@ struct ClipRecord: Codable, Sendable, Identifiable, Equatable, FetchableRecord, 
     /// Nothing reads it yet; it exists so an import is lossless and a later
     /// version can restore those features without a second migration.
     var legacyFlags: String?
+    /// Pinned clips are protected from retention pruning and pinned to the top.
+    var isPinned: Bool
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -94,6 +96,7 @@ struct ClipRecord: Codable, Sendable, Identifiable, Equatable, FetchableRecord, 
         case recognizedText = "recognized_text"
         case recognizedAt = "recognized_at"
         case legacyFlags = "legacy_flags"
+        case isPinned = "is_pinned"
     }
 
     enum Columns {
@@ -110,6 +113,7 @@ struct ClipRecord: Codable, Sendable, Identifiable, Equatable, FetchableRecord, 
         static let htmlKey = Column(CodingKeys.htmlKey)
         static let recognizedText = Column(CodingKeys.recognizedText)
         static let recognizedAt = Column(CodingKeys.recognizedAt)
+        static let isPinned = Column(CodingKeys.isPinned)
     }
 
     var createdDate: Date { Date(timeIntervalSince1970: createdAt) }
@@ -141,6 +145,7 @@ extension ClipRecord {
         source: SourceApp = SourceApp(),
         at date: Date = Date(),
         id: String = UUID().uuidString,
+        isPinned: Bool = false,
         rtfKey: String? = nil,
         htmlKey: String? = nil,
         overflow: (Data) throws -> String
@@ -167,7 +172,8 @@ extension ClipRecord {
             pixelHeight: nil,
             recognizedText: nil,
             recognizedAt: nil,
-            legacyFlags: nil
+            legacyFlags: nil,
+            isPinned: isPinned
         )
     }
 
@@ -183,7 +189,8 @@ extension ClipRecord {
         pixelHeight: Int,
         source: SourceApp = SourceApp(),
         at date: Date = Date(),
-        id: String = UUID().uuidString
+        id: String = UUID().uuidString,
+        isPinned: Bool = false
     ) -> ClipRecord {
         ClipRecord(
             id: id,
@@ -205,7 +212,8 @@ extension ClipRecord {
             pixelHeight: pixelHeight,
             recognizedText: nil,
             recognizedAt: nil,
-            legacyFlags: nil
+            legacyFlags: nil,
+            isPinned: isPinned
         )
     }
 

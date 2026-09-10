@@ -17,6 +17,7 @@ struct ClipDetail: View {
     let loadImage: (ClipCardModel) -> Data?
     let onTransform: (TextTransform) -> Void
     let onDismiss: () -> Void
+    let onTogglePin: () -> Void
 
     @State private var text = ""
     @State private var image: NSImage?
@@ -80,6 +81,24 @@ struct ClipDetail: View {
             Text(card.detail)
 
             Spacer(minLength: 8)
+
+            Button {
+                onTogglePin()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: card.isPinned ? "pin.fill" : "pin")
+                        .foregroundStyle(card.isPinned ? Theme.bookmark : .secondary)
+                    Text(card.isPinned ? "Pinned" : "Pin")
+                        .foregroundStyle(card.isPinned ? Theme.bookmark : .secondary)
+                }
+                .font(.system(size: Theme.metaSize))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(card.isPinned ? Theme.bookmark.opacity(0.12) : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
+            .buttonStyle(.plain)
+            .help(card.isPinned ? "Unpin clip (⌘P)" : "Pin clip (⌘P)")
         }
         .font(.system(size: Theme.metaSize))
         .foregroundStyle(.tertiary)
