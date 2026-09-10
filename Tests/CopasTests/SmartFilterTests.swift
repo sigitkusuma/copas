@@ -92,15 +92,29 @@ struct SmartFilterTests {
     }
 
     @Test func filterByColors() throws {
-        let color = text("#FF5733", at: at(10))
-        let nonColor = text("This is #notacolor really", at: at(20))
+        let hex6 = text("#FF5733", at: at(10))
+        let hex3 = text("#fff", at: at(15))
+        let rgb = text("rgb(255, 0, 0)", at: at(18))
+        let markdownHeading = text("# System Prompt — Overview", at: at(20))
+        let markdownSubheading = text("## Flowchart", at: at(22))
+        let nonColor = text("This is #notacolor really", at: at(25))
 
-        try repository.insert(color)
+        try repository.insert(hex6)
+        try repository.insert(hex3)
+        try repository.insert(rgb)
+        try repository.insert(markdownHeading)
+        try repository.insert(markdownSubheading)
         try repository.insert(nonColor)
 
         let query = ClipQuery(smartFilter: .colors)
         let results = try repository.page(matching: query, limit: 10)
 
-        #expect(results.contains { $0.id == color.id })
+        #expect(results.count == 3)
+        #expect(results.contains { $0.id == hex6.id })
+        #expect(results.contains { $0.id == hex3.id })
+        #expect(results.contains { $0.id == rgb.id })
+        #expect(!results.contains { $0.id == markdownHeading.id })
+        #expect(!results.contains { $0.id == markdownSubheading.id })
+        #expect(!results.contains { $0.id == nonColor.id })
     }
 }

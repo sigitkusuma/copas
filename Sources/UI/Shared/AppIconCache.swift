@@ -1,19 +1,22 @@
 import AppKit
 import Foundation
+import Observation
 
-/// Application icons, resolved once and kept.
+/// Application icons, resolved asynchronously and cached in memory.
 ///
-/// `NSWorkspace.icon(forFile:)` reads a bundle off disk. Called from `body` it is
-/// called again on every redraw of every card, which is exactly the shape of
-/// stall that makes a scrolling list feel broken. Cards only ever read from the
-/// dictionary; filling it is somebody else's job, done once per load.
+/// `NSWorkspace.urlForApplication` and `NSWorkspace.icon(forFile:)` perform disk I/O
+/// and system IPC with LaunchServices (`lsd`). For duplicated or slow bundles,
+/// LaunchServices can block for up to 60+ seconds. Resolving icons must ALWAYS
+/// happen off the main thread so the UI never hitches or freezes.
+@Observable
 @MainActor
 final class AppIconCache {
 
     static let shared = AppIconCache()
 
-    private var icons: [String: NSImage] = [:]
-    private var missing: Set<String> = []
+    private(set) var icons: [String: NSImage] = [:]
+    @ObservationIgnored private var missing: Set<String> = []
+    @ObservationIgnored private var inFlight: Set<String> = []
 
     private init() {}
 
@@ -22,21 +25,46 @@ final class AppIconCache {
     /// placeholder rather than to go looking.
     func icon(for bundleID: String?) -> NSImage? {
         guard let bundleID else { return nil }
-        return icons[bundleID]
+        if let icon = icons[bundleID] {
+            return icon
+        }
+        if !missing.contains(bundleID) && !inFlight.contains(bundleID) {
+            prewarm([bundleID])
+        }
+        return nil
     }
 
-    /// Resolves anything not already known. Called after a load, off `body`.
+    /// Resolves anything not already known off the main thread.
     func prewarm(_ bundleIDs: some Sequence<String>) {
-        for bundleID in Set(bundleIDs) where icons[bundleID] == nil && !missing.contains(bundleID) {
-            guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else {
-                // Remembered, so an app that has been uninstalled is not looked
-                // up again on every single load.
-                missing.insert(bundleID)
-                continue
+        let needed = Set(bundleIDs).filter {
+            icons[$0] == nil && !missing.contains($0) && !inFlight.contains($0)
+        }
+        guard !needed.isEmpty else { return }
+
+        for id in needed {
+            inFlight.insert(id)
+        }
+
+        Task.detached(priority: .utility) {
+            for bundleID in needed {
+                var resolvedIcon: NSImage? = nil
+
+                if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+                    let icon = NSWorkspace.shared.icon(forFile: url.path)
+                    icon.size = NSSize(width: 16, height: 16)
+                    resolvedIcon = icon
+                }
+
+                await MainActor.run {
+                    AppIconCache.shared.inFlight.remove(bundleID)
+                    if let resolvedIcon {
+                        AppIconCache.shared.icons[bundleID] = resolvedIcon
+                    } else {
+                        AppIconCache.shared.missing.insert(bundleID)
+                    }
+                }
             }
-            let icon = NSWorkspace.shared.icon(forFile: url.path)
-            icon.size = NSSize(width: 16, height: 16)
-            icons[bundleID] = icon
         }
     }
 }
+
