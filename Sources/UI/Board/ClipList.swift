@@ -28,6 +28,7 @@ struct ClipList: View {
                                 ClipRow(
                                     model: card,
                                     isFocused: card.id == model.focusedID,
+                                    isSelected: model.selectedIDs.contains(card.id),
                                     thumbnails: thumbnails
                                 )
                                 .equatable()
@@ -35,18 +36,26 @@ struct ClipList: View {
                                 // One click reads a clip in the pane beside
                                 // it, immediately. A second click on the same
                                 // row within the system double-click interval
-                                // pastes it — tracked by hand rather than
-                                // with a `count: 2` gesture, which would
-                                // force the single click to wait and see.
+                                // pastes it. ⌘-click and Shift-click multi-select.
                                 .onTapGesture {
-                                    let now = Date()
-                                    if let lastTap, lastTap.id == card.id,
-                                       now.timeIntervalSince(lastTap.date) < Self.doubleClickInterval {
-                                        model.paste()
-                                        self.lastTap = nil
+                                    let flags = NSEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                                    if flags.contains(.command) {
+                                        model.toggleSelection(for: card.id)
+                                    } else if flags.contains(.shift) {
+                                        model.selectRange(to: card.id)
                                     } else {
-                                        model.focusedID = card.id
-                                        lastTap = (card.id, now)
+                                        if model.isMultiSelecting {
+                                            model.clearSelection()
+                                        }
+                                        let now = Date()
+                                        if let lastTap, lastTap.id == card.id,
+                                           now.timeIntervalSince(lastTap.date) < Self.doubleClickInterval {
+                                            model.paste()
+                                            self.lastTap = nil
+                                        } else {
+                                            model.focusedID = card.id
+                                            lastTap = (card.id, now)
+                                        }
                                     }
                                 }
                             }

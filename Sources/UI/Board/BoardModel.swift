@@ -89,6 +89,35 @@ final class BoardModel {
     /// Whether the Transforms menu should be open. Toggled by ⌘T.
     var showTransforms = false
 
+    /// Active category filter pill under the search bar.
+    var activeFilter: SmartFilter = .all {
+        didSet {
+            guard activeFilter != oldValue else { return }
+            focusedID = nil
+            selectedIDs.removeAll()
+            loadedLimit = Self.pageLimit
+            reload()
+            observe()
+        }
+    }
+
+    /// The IDs of all multi-selected clips.
+    var selectedIDs: Set<String> = []
+
+    var selectedCards: [ClipCardModel] {
+        cards.filter { selectedIDs.contains($0.id) }
+    }
+
+    var isMultiSelecting: Bool {
+        selectedIDs.count > 1
+    }
+
+    private var currentQuery: ClipQuery {
+        var q = query.compiled()
+        q.smartFilter = activeFilter
+        return q
+    }
+
     /// How many more cards to load at a time.
     ///
     /// A few dozen fit on screen, so this is generous enough that scrolling
@@ -121,7 +150,9 @@ final class BoardModel {
         // wherever it was left five minutes ago means the very first Return
         // pastes something the user was not looking at.
         focusedID = nil
+        selectedIDs.removeAll()
         searchText = ""
+        activeFilter = .all
         query = SearchQuery("")
         loadedLimit = Self.pageLimit
         isVisibleGeneration += 1
@@ -144,7 +175,7 @@ final class BoardModel {
     /// One synchronous fetch. Cheap — an indexed query with a limit.
     func reload() {
         do {
-            apply(try clips.page(matching: query.compiled(), limit: loadedLimit))
+            apply(try clips.page(matching: currentQuery, limit: loadedLimit))
         } catch {
             Log.store.error("could not read clips: \(error, privacy: .public)")
         }
@@ -164,7 +195,7 @@ final class BoardModel {
     /// because an observation is bound to the question it was asked.
     private func observe() {
         observationTask?.cancel()
-        let observation = clips.observePage(matching: query.compiled(), limit: loadedLimit)
+        let observation = clips.observePage(matching: currentQuery, limit: loadedLimit)
         observationTask = Task { [weak self] in
             do {
                 for try await records in observation {
@@ -215,7 +246,7 @@ final class BoardModel {
         self.records = records
         sections = ClipSectionBuilder.sections(from: records, now: now, terms: query.terms)
         isLoaded = true
-        resultCount = (try? clips.count(matching: query.compiled())) ?? records.count
+        resultCount = (try? clips.count(matching: currentQuery)) ?? records.count
 
         AppIconCache.shared.prewarm(records.compactMap(\.sourceBundleID))
 
@@ -414,13 +445,85 @@ final class BoardModel {
         previewedID = previewedID == nil ? focusedID : nil
     }
 
+    // MARK: - Pinning
+
+    func togglePin(for id: String) {
+        guard let record = records.first(where: { $0.id == id }) else { return }
+        do {
+            _ = try clips.setPinned(!record.isPinned, for: id)
+        } catch {
+            Log.store.error("could not toggle pin: \(error, privacy: .public)")
+            NSSound.beep()
+        }
+    }
+
+    func togglePinFocused() {
+        guard let focusedID else { return }
+        togglePin(for: focusedID)
+    }
+
+    // MARK: - Multi-Selection & Merge
+
+    func toggleSelection(for id: String) {
+        if selectedIDs.contains(id) {
+            selectedIDs.remove(id)
+        } else {
+            selectedIDs.insert(id)
+        }
+        focusedID = id
+    }
+
+    func selectRange(to targetID: String) {
+        let allCards = cards
+        guard let targetIndex = allCards.firstIndex(where: { $0.id == targetID }) else { return }
+        let startIndex = focusedIndex ?? targetIndex
+        let range = min(startIndex, targetIndex)...max(startIndex, targetIndex)
+        for index in range {
+            selectedIDs.insert(allCards[index].id)
+        }
+        focusedID = targetID
+    }
+
+    func clearSelection() {
+        selectedIDs.removeAll()
+    }
+
+    func mergeSelected(delimiter: MergeDelimiter = .doubleNewline) {
+        let targetCards = isMultiSelecting ? selectedCards : (focusedCard.map { [$0] } ?? [])
+        guard !targetCards.isEmpty else { return }
+        let texts = targetCards.map { fullText(for: $0) }
+        let merged = ClipMergeUtility.merge(texts, delimiter: delimiter)
+        guard !merged.isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(merged, forType: .string)
+    }
+
+    func deleteSelected() {
+        guard !selectedIDs.isEmpty else {
+            deleteFocused()
+            return
+        }
+        do {
+            _ = try clips.delete(ids: Array(selectedIDs))
+            selectedIDs.removeAll()
+            focusedID = cards.first?.id
+        } catch {
+            Log.store.error("could not delete selected clips: \(error, privacy: .public)")
+            NSSound.beep()
+        }
+    }
+
     /// One key that always means "back", and only ever undoes one thing at a
-    /// time: the preview, then the search, then the board itself.
+    /// time: the preview, then selection, then search, then active filter, then the board itself.
     func escape() {
         if previewedID != nil {
             previewedID = nil
+        } else if !selectedIDs.isEmpty {
+            selectedIDs.removeAll()
         } else if clearSearch() {
             return
+        } else if activeFilter != .all {
+            activeFilter = .all
         } else {
             onDismiss?()
         }

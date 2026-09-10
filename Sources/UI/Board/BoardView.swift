@@ -16,6 +16,8 @@ struct BoardView: View {
             VStack(spacing: 0) {
                 SearchBar(model: model)
 
+                FilterBar(model: model)
+
                 ThemeSeparator()
 
                 ZStack {
@@ -73,14 +75,17 @@ struct BoardView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if let card = model.focusedCard {
+        if model.isMultiSelecting {
+            MultiSelectDetail(model: model)
+        } else if let card = model.focusedCard {
             ClipDetail(
                 card: card,
                 terms: model.query.terms,
                 loadText: { model.fullText(for: $0) },
                 loadImage: { model.imageData(for: $0) },
                 onTransform: { model.copyTransformed($0) },
-                onDismiss: { model.onDismiss?() }
+                onDismiss: { model.onDismiss?() },
+                onTogglePin: { model.togglePin(for: card.id) }
             )
         } else {
             ClipDetailPlaceholder()
@@ -124,13 +129,20 @@ struct BoardView: View {
     /// reads, because it is not there while you are wondering what to press.
     private var hints: some View {
         HStack(spacing: 14) {
-            hint("↑↓", "Move")
-            hint("↩", "Paste")
-            hint("⌘↩", "Copy")
-            hint("⌘Y", "Expand")
-            hint("⌘T", "Transform")
-            hint("⌘⌫", "Delete")
-            hint("⎋", model.isSearching ? "Clear" : "Close")
+            if model.isMultiSelecting {
+                hint("⌘M", "Merge")
+                hint("⌘⌫", "Delete (\(model.selectedIDs.count))")
+                hint("⎋", "Deselect")
+            } else {
+                hint("↑↓", "Move")
+                hint("↩", "Paste")
+                hint("⌘↩", "Copy")
+                hint("⌘P", model.focusedCard?.isPinned == true ? "Unpin" : "Pin")
+                hint("⌘Y", "Expand")
+                hint("⌘T", "Transform")
+                hint("⌘⌫", "Delete")
+                hint("⎋", model.isSearching ? "Clear" : "Close")
+            }
             Spacer(minLength: 0)
         }
         .font(.system(size: Theme.metaSize))
@@ -185,9 +197,23 @@ struct BoardView: View {
         // ← and → are deliberately not claimed: they belong to the caret in the
         // search field, which is where typing goes.
         case kVK_UpArrow:
-            hasOption ? model.moveFocusBySection(-1) : model.moveFocus(by: -1)
+            if flags.contains(.shift) {
+                if let current = model.focusedCard { model.toggleSelection(for: current.id) }
+                model.moveFocus(by: -1)
+                if let next = model.focusedCard { model.toggleSelection(for: next.id) }
+            } else {
+                if model.isMultiSelecting { model.clearSelection() }
+                hasOption ? model.moveFocusBySection(-1) : model.moveFocus(by: -1)
+            }
         case kVK_DownArrow:
-            hasOption ? model.moveFocusBySection(1) : model.moveFocus(by: 1)
+            if flags.contains(.shift) {
+                if let current = model.focusedCard { model.toggleSelection(for: current.id) }
+                model.moveFocus(by: 1)
+                if let next = model.focusedCard { model.toggleSelection(for: next.id) }
+            } else {
+                if model.isMultiSelecting { model.clearSelection() }
+                hasOption ? model.moveFocusBySection(1) : model.moveFocus(by: 1)
+            }
         case kVK_PageUp:
             model.moveFocus(by: -Self.pageStep)
         case kVK_PageDown:
@@ -201,18 +227,16 @@ struct BoardView: View {
         case kVK_Escape:
             model.escape()
 
-        // Expand and delete carry a modifier because the caret lives in the
-        // search field: Space has to type a space and Delete has to delete a
-        // character, or searching for anything with a word break in it is
-        // impossible. Binding them conditionally on whether the field is empty
-        // would be worse — a key that does two different things depending on
-        // state you cannot see.
         case kVK_ANSI_Y where hasCommand:
             model.togglePreview()
         case kVK_Delete where hasCommand:
-            model.deleteFocused()
+            model.isMultiSelecting ? model.deleteSelected() : model.deleteFocused()
         case kVK_ANSI_T where hasCommand:
             model.showTransforms = true
+        case kVK_ANSI_P where hasCommand:
+            model.togglePinFocused()
+        case kVK_ANSI_M where hasCommand:
+            model.mergeSelected()
 
         default:
             // Everything else reaches the search field, which is what makes

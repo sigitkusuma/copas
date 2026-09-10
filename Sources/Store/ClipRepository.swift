@@ -115,6 +115,18 @@ final class ClipRepository: Sendable {
         }
     }
 
+    /// Pins or unpins a clip. Pinned clips are protected from retention pruning
+    /// and sorted/grouped prominently in the UI.
+    @discardableResult
+    func setPinned(_ isPinned: Bool, for id: String) throws -> ClipRecord? {
+        try database.writer.write { db in
+            guard var record = try ClipRecord.fetchOne(db, key: id) else { return nil }
+            record.isPinned = isPinned
+            try record.update(db)
+            return record
+        }
+    }
+
     /// Deletes clips and returns the rows that went.
     ///
     /// Blobs and thumbnails are left on disk. Unlinking here would mean tracking
@@ -139,6 +151,7 @@ final class ClipRepository: Sendable {
     }
 
     /// Applies a retention policy. Returns what was removed, files untouched.
+    /// Pinned clips are never pruned.
     @discardableResult
     func prune(_ policy: RetentionPolicy, now: Date = Date()) throws -> [ClipRecord] {
         guard !policy.isUnlimited else { return [] }
@@ -149,7 +162,7 @@ final class ClipRepository: Sendable {
             if let maximumAge = policy.maximumAge {
                 let cutoff = now.timeIntervalSince1970 - maximumAge
                 for record in try ClipRecord
-                    .filter(ClipRecord.Columns.createdAt < cutoff)
+                    .filter(ClipRecord.Columns.createdAt < cutoff && ClipRecord.Columns.isPinned == false)
                     .fetchAll(db)
                 {
                     doomed[record.id] = record
@@ -157,9 +170,10 @@ final class ClipRepository: Sendable {
             }
 
             if let maximumCount = policy.maximumCount {
-                // Everything past the newest N, in the same order the board shows.
+                // Everything past the newest N unpinned clips.
                 let overflow = try ClipRecord.fetchAll(db, sql: """
                     SELECT * FROM clip
+                    WHERE is_pinned = 0
                     ORDER BY created_at DESC, id DESC
                     LIMIT -1 OFFSET ?
                     """, arguments: [max(0, maximumCount)])
@@ -168,9 +182,10 @@ final class ClipRepository: Sendable {
                 }
             }
 
-            guard !doomed.isEmpty else { return [] }
-            _ = try ClipRecord.deleteAll(db, keys: Array(doomed.keys))
-            return doomed.values.sorted { $0.createdAt > $1.createdAt }
+            let toDelete = doomed.filter { !$0.value.isPinned }
+            guard !toDelete.isEmpty else { return [] }
+            _ = try ClipRecord.deleteAll(db, keys: Array(toDelete.keys))
+            return toDelete.values.sorted { $0.createdAt > $1.createdAt }
         }
     }
 
@@ -289,6 +304,27 @@ final class ClipRepository: Sendable {
             conditions.append("clip.recognized_text IS NOT NULL AND clip.recognized_text <> ''")
         }
 
+        if let isPinned = query.isPinned {
+            conditions.append("clip.is_pinned = \(isPinned ? 1 : 0)")
+        }
+
+        if let smartFilter = query.smartFilter {
+            switch smartFilter {
+            case .all:
+                break
+            case .pinned:
+                conditions.append("clip.is_pinned = 1")
+            case .images:
+                conditions.append("clip.kind = 1")
+            case .links:
+                conditions.append("clip.kind = 0 AND (clip.preview LIKE '%http://%' OR clip.preview LIKE '%https://%')")
+            case .colors:
+                conditions.append("clip.kind = 0 AND clip.preview LIKE '#%'")
+            case .code:
+                conditions.append("clip.kind = 0 AND (clip.preview LIKE '%{%' OR clip.preview LIKE '%;%' OR clip.preview LIKE '%func %' OR clip.preview LIKE '%const %' OR clip.preview LIKE '%let %' OR clip.preview LIKE '%var %' OR clip.preview LIKE '%def %' OR clip.preview LIKE '%import %' OR clip.preview LIKE '%class %')")
+            }
+        }
+
         if let cursor {
             conditions.append("(clip.created_at < ? OR (clip.created_at = ? AND clip.id < ?))")
             arguments += [cursor.createdAt, cursor.createdAt, cursor.id]
@@ -308,12 +344,11 @@ final class ClipRepository: Sendable {
         before cursor: ClipCursor?
     ) throws -> [ClipRecord] {
         let compiled = Self.compile(query, before: cursor)
-        // Ordered by time even when searching. FTS5 can rank by relevance, but a
-        // clipboard history is something people navigate by *when* — a result set
-        // that reshuffles as you type costs more than the better first hit gains.
+        // Ordered by is_pinned first so pinned clips stay pinned to the top,
+        // then newest-first.
         return try ClipRecord.fetchAll(db, sql: """
             SELECT clip.* \(compiled.source)
-            ORDER BY clip.created_at DESC, clip.id DESC
+            ORDER BY clip.is_pinned DESC, clip.created_at DESC, clip.id DESC
             LIMIT ?
             """, arguments: compiled.arguments + [limit])
     }

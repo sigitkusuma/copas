@@ -159,6 +159,20 @@ final class AppDatabase: Sendable {
             }
         }
 
+        // Pinning lets users keep frequent clips permanently at the top of the
+        // board, immune to retention pruning.
+        migrator.registerMigration("v4.pinning") { db in
+            try db.alter(table: "clip") { t in
+                t.add(column: "is_pinned", .boolean).notNull().defaults(to: false)
+            }
+
+            try db.create(
+                index: "clip_on_pinned_and_created_at",
+                on: "clip",
+                columns: ["is_pinned", "created_at", "id"]
+            )
+        }
+
         return migrator
     }
 }

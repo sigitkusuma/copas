@@ -24,6 +24,7 @@ struct ClipCardModel: Identifiable, Equatable, Sendable {
     let pixelWidth: Int?
     let pixelHeight: Int?
     let isMonospaced: Bool
+    let isPinned: Bool
 
     /// What the card actually draws, which is not always the preview — see the
     /// initialiser.
@@ -75,6 +76,7 @@ struct ClipCardModel: Identifiable, Equatable, Sendable {
         pixelWidth = record.pixelWidth
         pixelHeight = record.pixelHeight
         isMonospaced = record.kind == .text && CodeHeuristic.looksLikeCode(record.preview)
+        isPinned = record.isPinned
         timestamp = RelativeTime.string(for: record.createdDate, relativeTo: now)
         self.terms = terms
 
@@ -236,7 +238,18 @@ enum ClipSectionBuilder {
     ) -> [ClipSection] {
         var sections: [ClipSection] = []
 
-        for record in records {
+        let pinned = records.filter(\.isPinned)
+        let unpinned = records.filter { !$0.isPinned }
+
+        if !pinned.isEmpty {
+            sections.append(ClipSection(
+                id: "pinned",
+                label: "Pinned",
+                cards: pinned.map { ClipCardModel($0, now: now, terms: terms) }
+            ))
+        }
+
+        for record in unpinned {
             let date = record.createdDate
             let day = calendar.startOfDay(for: date)
             let id = String(Int(day.timeIntervalSince1970))
