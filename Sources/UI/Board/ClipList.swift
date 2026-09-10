@@ -58,6 +58,9 @@ struct ClipList: View {
                                         }
                                     }
                                 }
+                                .contextMenu {
+                                    clipContextMenu(for: card)
+                                }
                             }
                         } header: {
                             DayHeader(label: section.label)
@@ -91,4 +94,97 @@ struct ClipList: View {
         // than as the same page split by a line.
         .background(Theme.canvasSubtle.background(Theme.canvas))
     }
+
+    // MARK: - Context Menu
+
+    @ViewBuilder
+    private func clipContextMenu(for card: ClipCardModel) -> some View {
+        let isMulti = model.isMultiSelecting && model.selectedIDs.contains(card.id)
+
+        if isMulti {
+            let merged = ClipMergeUtility.merge(model.selectedCards.map { model.fullText(for: $0) })
+            if !merged.isEmpty {
+                ShareLink(item: merged) {
+                    Label("Share Merged Clips...", systemImage: "square.and.arrow.up")
+                }
+
+                Button {
+                    let texts = model.selectedCards.map { model.fullText(for: $0) }
+                    ClipExportUtility.exportMerged(texts: texts)
+                } label: {
+                    Label("Export Merged as File...", systemImage: "arrow.down.doc")
+                }
+
+                Button {
+                    model.mergeSelected()
+                } label: {
+                    Label("Merge & Copy (\(model.selectedIDs.count) clips)", systemImage: "doc.on.doc")
+                }
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                model.deleteSelected()
+            } label: {
+                Label("Delete (\(model.selectedIDs.count) clips)", systemImage: "trash")
+            }
+        } else {
+            if card.kind == .text {
+                let text = model.fullText(for: card)
+                if !text.isEmpty {
+                    ShareLink(item: text) {
+                        Label("Share...", systemImage: "square.and.arrow.up")
+                    }
+                }
+
+                Button {
+                    ClipExportUtility.exportText(model.fullText(for: card))
+                } label: {
+                    Label("Export as File...", systemImage: "arrow.down.doc")
+                }
+            } else if card.kind == .image {
+                if let data = model.imageData(for: card), let image = NSImage(data: data) {
+                    ShareLink(item: Image(nsImage: image), preview: SharePreview("Image clip", image: Image(nsImage: image))) {
+                        Label("Share...", systemImage: "square.and.arrow.up")
+                    }
+
+                    Button {
+                        ClipExportUtility.exportImage(data: data)
+                    } label: {
+                        Label("Export as File...", systemImage: "arrow.down.doc")
+                    }
+                }
+            }
+
+            Divider()
+
+            Button {
+                model.paste(card)
+            } label: {
+                Label("Paste", systemImage: "doc.on.clipboard")
+            }
+
+            Button {
+                model.copyWithoutPasting(card)
+            } label: {
+                Label("Copy to Clipboard", systemImage: "doc.on.doc")
+            }
+
+            Button {
+                model.togglePin(for: card.id)
+            } label: {
+                Label(card.isPinned ? "Unpin" : "Pin", systemImage: card.isPinned ? "pin.slash" : "pin")
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                model.delete(id: card.id)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
 }
+
