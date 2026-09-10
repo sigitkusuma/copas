@@ -32,6 +32,11 @@ struct KeyCombination: Sendable, Equatable, Codable {
     /// ⇧⌘2, for capturing a region and reading text out of it.
     static let captureToText = KeyCombination(keyCode: 0x13, modifiers: [.command, .shift])
 
+    /// ⇧⌘1, for capturing a region and keeping it as an image. Not ⇧⌘3/4/5 —
+    /// those are macOS's own screenshot shortcuts, and claiming them would
+    /// collide with the system rather than add to it.
+    static let captureToImage = KeyCombination(keyCode: 0x12, modifiers: [.command, .shift])
+
     /// Carbon wants its own modifier bitfield, in its own order.
     var carbonModifiers: UInt32 {
         var value: UInt32 = 0

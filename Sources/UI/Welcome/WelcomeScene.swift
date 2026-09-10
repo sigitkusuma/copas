@@ -59,6 +59,12 @@ struct WelcomeScene: View {
                     title: "Capture to text",
                     detail: "Drag over a receipt, an error, a screenshot — the text lands on your clipboard."
                 )
+                ShortcutRow(
+                    combination: .captureToImage,
+                    symbol: "photo",
+                    title: "Capture to image",
+                    detail: "Same drag, but keeps the picture — for diagrams and mockups, anything better seen than read."
+                )
 
                 ThemeSeparator()
 
