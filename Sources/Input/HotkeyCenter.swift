@@ -7,6 +7,7 @@ import Foundation
 enum HotkeyID: UInt32, Sendable, CaseIterable {
     case showBoard = 1
     case captureToText = 2
+    case captureToImage = 3
 }
 
 /// Registers global keyboard shortcuts and routes them back to Swift.

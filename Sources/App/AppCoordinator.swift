@@ -52,7 +52,7 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         return controller
     }()
 
-    // Capture to text.
+    // Region capture, shared by Capture to Text and Capture to Image.
     private let regionCapture = RegionCapture()
 
     private var updates: UpdateCoordinator?
@@ -70,12 +70,14 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         statusItem = StatusItemController(actions: StatusItemController.Actions(
             toggleBoard: { [weak self] in self?.toggleBoard() },
             captureToText: { [weak self] in self?.captureToText() },
+            captureToImage: { [weak self] in self?.captureToImage() },
             togglePause: { [weak self] in self?.togglePause() },
             isPaused: { [weak self] in self?.monitor?.isPaused ?? false },
             isCaptureToTextEnabled: { [weak self] in self?.preferences.isCaptureToTextEnabled ?? false },
+            isCaptureToImageEnabled: { [weak self] in self?.preferences.isCaptureToImageEnabled ?? false },
             shortcuts: { [weak self] in
-                guard let self else { return (.showBoard, .captureToText) }
-                return (preferences.showBoardHotkey, preferences.captureToTextHotkey)
+                guard let self else { return (.showBoard, .captureToText, .captureToImage) }
+                return (preferences.showBoardHotkey, preferences.captureToTextHotkey, preferences.captureToImageHotkey)
             },
             checkForUpdates: { [weak self] in self?.updates?.checkForUpdates() },
             openSettings: { [weak self] in self?.openSettings() },
@@ -222,6 +224,14 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         } else {
             hotkeys.unregister(.captureToText)
         }
+
+        if preferences.isCaptureToImageEnabled {
+            hotkeys.register(.captureToImage, combination: preferences.captureToImageHotkey) { [weak self] in
+                self?.captureToImage()
+            }
+        } else {
+            hotkeys.unregister(.captureToImage)
+        }
     }
 
     // MARK: - Settings
@@ -342,6 +352,32 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         } else {
             pasteboard.setString(text, forType: .string)
             CaptureHUD.shared.show("Text copied", symbol: "text.viewfinder")
+        }
+    }
+
+    // MARK: - Capture to image
+
+    /// Drag out a region of the screen and keep it as a picture.
+    ///
+    /// Writing the PNG straight to the pasteboard is deliberate: it lets the
+    /// same monitor → ingest → recognise pipeline that handles every other
+    /// copied image pick this one up too, rather than duplicating that path
+    /// here for a capture that is otherwise no different.
+    private func captureToImage() {
+        guard RegionCapture.requestPermission() else { return }
+
+        Task { @MainActor in
+            switch await regionCapture.selectRegion() {
+            case .cancelled:
+                return
+            case .failed:
+                CaptureHUD.shared.show("Capture failed", symbol: "exclamationmark.triangle")
+            case .captured(let data):
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                pasteboard.setData(data, forType: .png)
+                CaptureHUD.shared.show("Image copied", symbol: "photo")
+            }
         }
     }
 

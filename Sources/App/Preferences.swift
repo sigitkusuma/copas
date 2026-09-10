@@ -20,6 +20,8 @@ final class Preferences {
         showBoardHotkey = Self.hotkey(forKey: Key.showBoardHotkey, in: defaults) ?? .showBoard
         captureToTextHotkey = Self.hotkey(forKey: Key.captureToTextHotkey, in: defaults) ?? .captureToText
         isCaptureToTextEnabled = defaults.object(forKey: Key.captureToTextEnabled) as? Bool ?? true
+        captureToImageHotkey = Self.hotkey(forKey: Key.captureToImageHotkey, in: defaults) ?? .captureToImage
+        isCaptureToImageEnabled = defaults.object(forKey: Key.captureToImageEnabled) as? Bool ?? true
 
         boardEdge = (defaults.string(forKey: Key.boardEdge)).flatMap(BoardEdge.init(rawValue:)) ?? .top
 
@@ -49,6 +51,14 @@ final class Preferences {
 
     var isCaptureToTextEnabled: Bool {
         didSet { defaults.set(isCaptureToTextEnabled, forKey: Key.captureToTextEnabled) }
+    }
+
+    var captureToImageHotkey: KeyCombination {
+        didSet { write(captureToImageHotkey, forKey: Key.captureToImageHotkey) }
+    }
+
+    var isCaptureToImageEnabled: Bool {
+        didSet { defaults.set(isCaptureToImageEnabled, forKey: Key.captureToImageEnabled) }
     }
 
     // MARK: - Board
@@ -151,6 +161,8 @@ final class Preferences {
         static let showBoardHotkey = "hotkey.showBoard"
         static let captureToTextHotkey = "hotkey.captureToText"
         static let captureToTextEnabled = "hotkey.captureToText.enabled"
+        static let captureToImageHotkey = "hotkey.captureToImage"
+        static let captureToImageEnabled = "hotkey.captureToImage.enabled"
         static let boardEdge = "board.edge"
         static let maximumClipCount = "history.maximumCount"
         static let maximumClipAgeInDays = "history.maximumAgeInDays"

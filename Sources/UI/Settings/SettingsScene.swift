@@ -63,6 +63,14 @@ private struct GeneralSettings: View {
                     )
                 }
                 Toggle("Enable capture to text", isOn: $preferences.isCaptureToTextEnabled)
+
+                LabeledContent("Capture to image") {
+                    HotkeyRecorder(
+                        combination: $preferences.captureToImageHotkey,
+                        isEnabled: preferences.isCaptureToImageEnabled
+                    )
+                }
+                Toggle("Enable capture to image", isOn: $preferences.isCaptureToImageEnabled)
             } header: {
                 Text("Shortcuts")
             } footer: {
@@ -73,6 +81,8 @@ private struct GeneralSettings: View {
             .onChange(of: preferences.showBoardHotkey) { actions.reregisterHotkeys() }
             .onChange(of: preferences.captureToTextHotkey) { actions.reregisterHotkeys() }
             .onChange(of: preferences.isCaptureToTextEnabled) { actions.reregisterHotkeys() }
+            .onChange(of: preferences.captureToImageHotkey) { actions.reregisterHotkeys() }
+            .onChange(of: preferences.isCaptureToImageEnabled) { actions.reregisterHotkeys() }
 
             Section("Appearance") {
                 Picker("Board position", selection: $preferences.boardEdge) {

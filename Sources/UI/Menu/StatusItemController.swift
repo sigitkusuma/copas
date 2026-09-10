@@ -13,11 +13,13 @@ final class StatusItemController {
     struct Actions {
         var toggleBoard: () -> Void = {}
         var captureToText: () -> Void = {}
+        var captureToImage: () -> Void = {}
         var togglePause: () -> Void = {}
         var isPaused: () -> Bool = { false }
         var isCaptureToTextEnabled: () -> Bool = { true }
-        var shortcuts: () -> (board: KeyCombination, capture: KeyCombination) = {
-            (.showBoard, .captureToText)
+        var isCaptureToImageEnabled: () -> Bool = { true }
+        var shortcuts: () -> (board: KeyCombination, captureText: KeyCombination, captureImage: KeyCombination) = {
+            (.showBoard, .captureToText, .captureToImage)
         }
         var checkForUpdates: () -> Void = {}
         var openSettings: () -> Void = {}
@@ -76,13 +78,21 @@ final class StatusItemController {
             shortcut: shortcuts.board
         ))
 
-        let capture = item(
+        let captureText = item(
             "Capture to Text",
             #selector(menuCaptureToText),
-            shortcut: shortcuts.capture
+            shortcut: shortcuts.captureText
         )
-        capture.isEnabled = actions.isCaptureToTextEnabled()
-        menu.addItem(capture)
+        captureText.isEnabled = actions.isCaptureToTextEnabled()
+        menu.addItem(captureText)
+
+        let captureImage = item(
+            "Capture to Image",
+            #selector(menuCaptureToImage),
+            shortcut: shortcuts.captureImage
+        )
+        captureImage.isEnabled = actions.isCaptureToImageEnabled()
+        menu.addItem(captureImage)
 
         menu.addItem(.separator())
         menu.addItem(item(
@@ -127,6 +137,7 @@ final class StatusItemController {
 
     @objc private func menuToggleBoard() { actions.toggleBoard() }
     @objc private func menuCaptureToText() { actions.captureToText() }
+    @objc private func menuCaptureToImage() { actions.captureToImage() }
     @objc private func menuTogglePause() { actions.togglePause(); refresh() }
     @objc private func menuCheckForUpdates() { actions.checkForUpdates() }
     @objc private func menuOpenSettings() { actions.openSettings() }
