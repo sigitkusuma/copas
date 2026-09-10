@@ -249,6 +249,9 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
                 guard let self else { return }
                 updates?.checksAutomatically = preferences.checksForUpdatesAutomatically
                 updates?.wantsBetaUpdates = preferences.receivesBetaUpdates
+            },
+            fetchStats: { [weak self] in
+                (try? self?.clips?.statistics()) ?? ClipboardStats()
             }
         )
     }

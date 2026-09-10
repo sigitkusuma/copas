@@ -140,6 +140,11 @@ struct MultiSelectDetail: View {
 
     // MARK: - Actions
 
+    private var mergedText: String {
+        let texts = model.selectedCards.map { model.fullText(for: $0) }
+        return ClipMergeUtility.merge(texts, delimiter: selectedDelimiter)
+    }
+
     private var actions: some View {
         HStack(spacing: 12) {
             Button {
@@ -163,6 +168,41 @@ struct MultiSelectDetail: View {
             }
             .buttonStyle(.plain)
 
+            if !mergedText.isEmpty {
+                ShareLink(item: mergedText) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "square.and.arrow.up")
+                        Text("Share")
+                    }
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(Theme.field)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .help("Share merged clips")
+
+                Button {
+                    let texts = model.selectedCards.map { model.fullText(for: $0) }
+                    ClipExportUtility.exportMerged(texts: texts, delimiter: selectedDelimiter)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.down.doc")
+                        Text("Export...")
+                    }
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(Theme.field)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .help("Export merged clips as file...")
+            }
+
             Button {
                 model.deleteSelected()
             } label: {
@@ -180,3 +220,4 @@ struct MultiSelectDetail: View {
         .padding(.top, 4)
     }
 }
+

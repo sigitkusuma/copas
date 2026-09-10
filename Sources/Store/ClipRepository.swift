@@ -217,6 +217,59 @@ final class ClipRepository: Sendable {
         }
     }
 
+    /// Aggregates historical metrics across clips for the statistics dashboard.
+    func statistics(now: Date = Date(), calendar: Calendar = .current) throws -> ClipboardStats {
+        try database.writer.read { db in
+            let total = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM clip") ?? 0
+            let textCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM clip WHERE kind = 0") ?? 0
+            let imageCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM clip WHERE kind = 1") ?? 0
+            let pinnedCount = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM clip WHERE is_pinned = 1") ?? 0
+            let totalBytes = try Int.fetchOne(db, sql: "SELECT COALESCE(SUM(byte_size), 0) FROM clip") ?? 0
+
+            let startOfToday = calendar.startOfDay(for: now).timeIntervalSince1970
+            let clipsToday = try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM clip WHERE created_at >= ?",
+                arguments: [startOfToday]
+            ) ?? 0
+
+            let startOfWeek = (calendar.date(byAdding: .day, value: -7, to: now) ?? now).timeIntervalSince1970
+            let clipsThisWeek = try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM clip WHERE created_at >= ?",
+                arguments: [startOfWeek]
+            ) ?? 0
+
+            let topAppsRows = try Row.fetchAll(db, sql: """
+                SELECT source_bundle_id, source_app_name, COUNT(*) as clip_count
+                FROM clip
+                WHERE source_app_name IS NOT NULL AND source_app_name != ''
+                GROUP BY source_bundle_id, source_app_name
+                ORDER BY clip_count DESC
+                LIMIT 5
+                """)
+
+            let topApps = topAppsRows.map { row in
+                AppClipCount(
+                    bundleID: row["source_bundle_id"],
+                    name: row["source_app_name"] ?? "Unknown",
+                    count: row["clip_count"] ?? 0
+                )
+            }
+
+            return ClipboardStats(
+                totalClips: total,
+                textClips: textCount,
+                imageClips: imageCount,
+                pinnedClips: pinnedCount,
+                clipsToday: clipsToday,
+                clipsThisWeek: clipsThisWeek,
+                totalBytes: totalBytes,
+                topApps: topApps
+            )
+        }
+    }
+
     /// Every blob and thumbnail key still referenced by a row.
     ///
     /// The input to the launch-time file sweep. Anything on disk and not in here
