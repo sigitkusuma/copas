@@ -15,6 +15,8 @@ struct ClipDetail: View {
     /// and never has to know where a blob lives.
     let loadText: (ClipCardModel) -> String
     let loadImage: (ClipCardModel) -> Data?
+    let onTransform: (TextTransform) -> Void
+    let onDismiss: () -> Void
 
     @State private var text = ""
     @State private var image: NSImage?
@@ -28,6 +30,17 @@ struct ClipDetail: View {
             header
 
             ThemeSeparator()
+
+            // Action bar: quick actions + transforms. Text clips only.
+            if card.kind == .text {
+                ClipActionBar(
+                    text: text,
+                    card: card,
+                    onTransform: onTransform,
+                    onDismiss: onDismiss
+                )
+                ThemeSeparator()
+            }
 
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

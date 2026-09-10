@@ -86,6 +86,9 @@ final class BoardModel {
     @ObservationIgnored var onActivate: ((ClipRecord, _ paste: Bool) -> Void)?
     @ObservationIgnored var onDismiss: (() -> Void)?
 
+    /// Whether the Transforms menu should be open. Toggled by ⌘T.
+    var showTransforms = false
+
     /// How many more cards to load at a time.
     ///
     /// A few dozen fit on screen, so this is generous enough that scrolling
@@ -326,6 +329,16 @@ final class BoardModel {
 
     func copyWithoutPasting() {
         activate(focusedCard, paste: false)
+    }
+
+    /// Applies `transform` to the focused clip's full text and writes the
+    /// result to the system pasteboard — the stored clip is never mutated.
+    func copyTransformed(_ transform: TextTransform) {
+        guard let card = focusedCard else { return }
+        let source = fullText(for: card)
+        let result = transform.apply(source)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(result, forType: .string)
     }
 
     /// ⌘1 through ⌘9, counted from the newest clip.

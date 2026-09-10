@@ -78,7 +78,9 @@ struct BoardView: View {
                 card: card,
                 terms: model.query.terms,
                 loadText: { model.fullText(for: $0) },
-                loadImage: { model.imageData(for: $0) }
+                loadImage: { model.imageData(for: $0) },
+                onTransform: { model.copyTransformed($0) },
+                onDismiss: { model.onDismiss?() }
             )
         } else {
             ClipDetailPlaceholder()
@@ -126,6 +128,7 @@ struct BoardView: View {
             hint("↩", "Paste")
             hint("⌘↩", "Copy")
             hint("⌘Y", "Expand")
+            hint("⌘T", "Transform")
             hint("⌘⌫", "Delete")
             hint("⎋", model.isSearching ? "Clear" : "Close")
             Spacer(minLength: 0)
@@ -139,6 +142,7 @@ struct BoardView: View {
         .accessibilityLabel(
             "Keyboard shortcuts: up and down arrows move through clips, "
             + "Return pastes, Command Return copies, Command Y expands, "
+            + "Command T transforms, "
             + "Command Delete deletes, Escape "
             + (model.isSearching ? "clears the search" : "closes the board")
         )
@@ -207,6 +211,8 @@ struct BoardView: View {
             model.togglePreview()
         case kVK_Delete where hasCommand:
             model.deleteFocused()
+        case kVK_ANSI_T where hasCommand:
+            model.showTransforms = true
 
         default:
             // Everything else reaches the search field, which is what makes
