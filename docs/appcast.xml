@@ -3,6 +3,46 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.0.7</title>
+            <pubDate>Fri, 11 Sep 2026 15:29:38 +0700</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>8</sparkle:version>
+            <sparkle:shortVersionString>1.0.7</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.0.7</h2>
+
+<p>
+  A stability and performance update resolving a UI freeze and refining color filters.
+</p>
+
+<ul>
+  <li>
+    <strong>Asynchronous App Icon Resolution:</strong> App icon lookups for clips
+    now resolve in the background off the main thread. Even if macOS LaunchServices
+    takes time to query custom or cloned application bundles, the Copas board
+    remains completely fluid and responsive with zero UI stalling.
+  </li>
+  <li>
+    <strong>Refined Colors Filter:</strong> The Colors smart filter now strictly
+    targets actual color values (hex codes like <code>#FF5733</code>, <code>#fff</code>,
+    and CSS functions like <code>rgb()</code>, <code>hsl()</code>), preventing
+    Markdown notes and headings starting with <code>#</code> from being mistakenly
+    categorised as colors.
+  </li>
+  <li>
+    <strong>Filter Empty State:</strong> When a filter has no matching clips, the
+    board now shows a helpful "No clips match" search empty state rather than
+    "Nothing copied yet".
+  </li>
+</ul>
+
+<p>
+  Your clips, settings and shortcuts are untouched by this update.
+</p>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.7/Copas-1.0.7.zip" length="4249392" type="application/octet-stream" sparkle:edSignature="vHNPs1rPRB7uD/fZwZ1BbDEYgTW8tHnKXmmfFBm/PRs7FSTX8HqWlyJulgOJV0T2jlDR64H0I+umZUqmhmBqDw=="/>
+        </item>
+        <item>
             <title>1.0.6</title>
             <pubDate>Fri, 11 Sep 2026 00:37:23 +0700</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -69,33 +109,6 @@
 </p>
 ]]></description>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.5/Copas-1.0.5.zip" length="3987302" type="application/octet-stream" sparkle:edSignature="ERmvl8oBqiqSBF/Hns8Hc9Ke6/0h9yLbQ91SVGHtByrTDwZDLn8VVMNHVm83BogfaxblMT7dfRaTefV5IHlIAg=="/>
-        </item>
-        <item>
-            <title>1.0.4</title>
-            <pubDate>Sat, 05 Sep 2026 12:05:52 +0700</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>5</sparkle:version>
-            <sparkle:shortVersionString>1.0.4</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.0.4</h2>
-
-<p>
-  A first look at Copas for anyone opening it for the first time.
-</p>
-
-<ul>
-  <li>
-    <strong>A welcome window on first launch</strong> walks through opening the
-    board (⇧⌘V), capturing a region as text (⇧⌘2), and turning on Accessibility
-    so Copas can paste for you — shown once, and never again after that.
-  </li>
-</ul>
-
-<p>
-  Your clips, settings and shortcuts are untouched by this update.
-</p>
-]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.4/Copas-1.0.4.zip" length="3979212" type="application/octet-stream" sparkle:edSignature="ZxkOj7p4r8lYqIdr6GgtXEN55QPe69nj0GBzfjvCMwa5ECKPW7rWYfUoGQK4ks9Q4GZidi23RzDX7rIf74k1CA=="/>
         </item>
     </channel>
 </rss>
