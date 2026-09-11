@@ -1,0 +1,30 @@
+<h2>Copas 1.0.7</h2>
+
+<p>
+  A stability and performance update resolving a UI freeze and refining color filters.
+</p>
+
+<ul>
+  <li>
+    <strong>Asynchronous App Icon Resolution:</strong> App icon lookups for clips
+    now resolve in the background off the main thread. Even if macOS LaunchServices
+    takes time to query custom or cloned application bundles, the Copas board
+    remains completely fluid and responsive with zero UI stalling.
+  </li>
+  <li>
+    <strong>Refined Colors Filter:</strong> The Colors smart filter now strictly
+    targets actual color values (hex codes like <code>#FF5733</code>, <code>#fff</code>,
+    and CSS functions like <code>rgb()</code>, <code>hsl()</code>), preventing
+    Markdown notes and headings starting with <code>#</code> from being mistakenly
+    categorised as colors.
+  </li>
+  <li>
+    <strong>Filter Empty State:</strong> When a filter has no matching clips, the
+    board now shows a helpful "No clips match" search empty state rather than
+    "Nothing copied yet".
+  </li>
+</ul>
+
+<p>
+  Your clips, settings and shortcuts are untouched by this update.
+</p>
