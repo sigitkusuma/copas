@@ -1,0 +1,6 @@
+title: Copas
+description: "A fast, native, privacy-first clipboard manager for macOS. Everything you copy, kept, searchable, and one keystroke away."
+theme: jekyll-theme-primer
+show_downloads: false
+plugins:
+  - jekyll-seo-tag
