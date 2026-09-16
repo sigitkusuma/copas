@@ -127,6 +127,39 @@ final class ClipRepository: Sendable {
         }
     }
 
+    /// Updates the text content of a clip, synchronizing its preview, character count,
+    /// hashes, and FTS5 search index.
+    @discardableResult
+    func updateText(_ text: String, for id: String, overflow: (Data) throws -> String) throws -> ClipRecord? {
+        try database.writer.write { db in
+            guard var record = try ClipRecord.fetchOne(db, key: id) else { return nil }
+            guard record.kind == .text else { return record }
+
+            let data = Data(text.utf8)
+            let inline = data.count <= ClipRecord.inlineByteLimit
+            let newHash = ContentHash.hex(of: data)
+
+            // If another record with this exact content hash already exists, remove it
+            // so we don't violate the unique content_hash index.
+            if let existing = try ClipRecord.filter(ClipRecord.Columns.contentHash == newHash && ClipRecord.Columns.id != id).fetchOne(db) {
+                try existing.delete(db)
+            }
+
+            record.preview = ClipRecord.makePreview(from: text)
+            record.contentHash = newHash
+            record.byteSize = data.count
+            record.charCount = text.count
+            record.isInline = inline
+            record.inlineText = inline ? text : nil
+            record.blobKey = inline ? nil : try overflow(data)
+            record.rtfKey = nil
+            record.htmlKey = nil
+
+            try record.update(db)
+            return record
+        }
+    }
+
     /// Deletes clips and returns the rows that went.
     ///
     /// Blobs and thumbnails are left on disk. Unlinking here would mean tracking

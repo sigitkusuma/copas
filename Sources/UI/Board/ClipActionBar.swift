@@ -25,9 +25,10 @@ struct ClipActionBar: View {
     private var contentType: ClipContentType { ClipContentType.classify(text) }
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 4) {
             quickActions
             Spacer(minLength: 6)
+            writingToolsButton
             transformsButton
         }
         .padding(.horizontal, Theme.detailPadding)
@@ -97,6 +98,37 @@ struct ClipActionBar: View {
                 .foregroundStyle(Theme.accent)
                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
         }
+    }
+
+    // MARK: - Apple Intelligence & Writing Tools
+
+    private var writingToolsButton: some View {
+        Button {
+            ClipTextView.triggerWritingTools()
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: writingToolsIcon)
+                    .font(.system(size: 11, weight: .medium))
+                Text("Writing Tools")
+                    .font(.system(size: Theme.metaSize, weight: .medium))
+            }
+            .foregroundStyle(Theme.accent)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.chipRadius + 2)
+                    .fill(Theme.accent.opacity(0.1))
+            )
+        }
+        .buttonStyle(.plain)
+        .help("Open Apple Intelligence Writing Tools")
+    }
+
+    private var writingToolsIcon: String {
+        if #available(macOS 15.0, *), NSImage(systemSymbolName: "apple.intelligence", accessibilityDescription: nil) != nil {
+            return "apple.intelligence"
+        }
+        return "wand.and.stars"
     }
 
     // MARK: - Transforms Menu

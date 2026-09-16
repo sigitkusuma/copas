@@ -131,4 +131,29 @@ final class PasteboardReaderTests {
 
         #expect(small.read(pasteboard, source: source)?.content == .text(RichText(plain: file.path)))
     }
+
+    /// Web browsers (Safari, Chrome) write both the image data (PNG/TIFF) and
+    /// the image URL as plain text. Image data must take priority over the URL text.
+    @Test func copiedWebImageWithURLStringBeatsTheString() {
+        let png = Fixtures.pngData(width: 32, height: 32)
+        pasteboard.clearContents()
+        pasteboard.setData(png, forType: .png)
+        pasteboard.setString("https://example.com/photo.png", forType: .string)
+
+        #expect(reader.read(pasteboard, source: source)?.content == .image(png))
+    }
+
+    /// JPEGs written to the pasteboard are recognized and normalized to PNG.
+    @Test func jpegImageBytesAreReadAndNormalisedToPNG() {
+        let jpeg = Fixtures.jpegData(width: 24, height: 24)
+        pasteboard.clearContents()
+        pasteboard.setData(jpeg, forType: .init("public.jpeg"))
+
+        guard case .image(let data)? = reader.read(pasteboard, source: source)?.content else {
+            Issue.record("expected an image")
+            return
+        }
+        #expect(data.starts(with: [0x89, 0x50, 0x4E, 0x47]), "expected a PNG signature")
+        #expect(ThumbnailStore.pixelSize(of: data) == CGSize(width: 24, height: 24))
+    }
 }

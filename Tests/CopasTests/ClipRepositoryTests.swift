@@ -132,6 +132,35 @@ struct ClipRepositoryTests {
         #expect(Set(seen).count == 6)
     }
 
+    // MARK: - Updating Text
+
+    @Test func updateTextChangesRecordContentAndPreview() throws {
+        let original = text("original draft", at: at(0), id: "clip-1")
+        _ = try repository.insert(original)
+
+        let updated = try repository.updateText("revised final version", for: "clip-1") { ContentHash.hex(of: $0) }
+        #expect(updated?.preview == "revised final version")
+        #expect(updated?.inlineText == "revised final version")
+        #expect(updated?.charCount == "revised final version".count)
+
+        let fetched = try repository.record(id: "clip-1")
+        #expect(fetched?.preview == "revised final version")
+        #expect(fetched?.inlineText == "revised final version")
+    }
+
+    @Test func updateTextUpdatesFTS5Search() throws {
+        let record = text("hello world", at: at(0), id: "clip-2")
+        _ = try repository.insert(record)
+
+        #expect(try repository.page(matching: .text("world"), limit: 10).count == 1)
+        #expect(try repository.page(matching: .text("universe"), limit: 10).isEmpty)
+
+        _ = try repository.updateText("hello universe", for: "clip-2") { ContentHash.hex(of: $0) }
+
+        #expect(try repository.page(matching: .text("world"), limit: 10).isEmpty)
+        #expect(try repository.page(matching: .text("universe"), limit: 10).count == 1)
+    }
+
     // MARK: - Search
 
     @Test func searchMatchesThePreview() throws {

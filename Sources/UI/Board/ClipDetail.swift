@@ -18,13 +18,16 @@ struct ClipDetail: View {
     let onTransform: (TextTransform) -> Void
     let onDismiss: () -> Void
     let onTogglePin: () -> Void
+    var onSaveText: ((String) -> Void)? = nil
 
     @State private var text = ""
+    @State private var originalText = ""
     @State private var image: NSImage?
+    @State private var justSaved = false
 
-    /// Highlighting walks the whole string, so it is worth doing for the clip
-    /// you are looking at and not worth doing for a 400 KB log file.
-    private static let highlightLimit = 20_000
+    private var isModified: Bool {
+        card.kind == .text && text != originalText
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -32,12 +35,14 @@ struct ClipDetail: View {
 
             ThemeSeparator()
 
-            // Action bar: quick actions + transforms. Text clips only.
+            // Action bar: quick actions + transforms + Writing Tools. Text clips only.
             if card.kind == .text {
                 ClipActionBar(
                     text: text,
                     card: card,
-                    onTransform: onTransform,
+                    onTransform: { transform in
+                        onTransform(transform)
+                    },
                     onDismiss: onDismiss
                 )
                 ThemeSeparator()
@@ -47,14 +52,27 @@ struct ClipDetail: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background {
+            Button("") {
+                if isModified {
+                    saveChanges()
+                }
+            }
+            .keyboardShortcut("s", modifiers: .command)
+            .opacity(0)
+        }
         // Keyed on the clip: arrowing down the list cancels the load in flight
         // and starts the one for the row you actually landed on.
         .task(id: card.id) {
             text = ""
+            originalText = ""
             image = nil
+            justSaved = false
             switch card.kind {
             case .text:
-                text = loadText(card)
+                let loaded = loadText(card)
+                text = loaded
+                originalText = loaded
             case .image:
                 image = loadImage(card).flatMap(NSImage.init(data:))
             }
@@ -83,6 +101,43 @@ struct ClipDetail: View {
             Spacer(minLength: 8)
 
             HStack(spacing: 8) {
+                if isModified {
+                    Button {
+                        text = originalText
+                    } label: {
+                        Text("Revert")
+                            .font(.system(size: Theme.metaSize))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Discard edits")
+
+                    Button {
+                        saveChanges()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "checkmark")
+                            Text("Save")
+                        }
+                        .font(.system(size: Theme.metaSize, weight: .semibold))
+                        .foregroundStyle(Theme.accent)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(Theme.accent.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Update clip & clipboard (⌘S)")
+                } else if justSaved {
+                    HStack(spacing: 3) {
+                        Image(systemName: "checkmark")
+                        Text("Updated")
+                    }
+                    .font(.system(size: Theme.metaSize, weight: .medium))
+                    .foregroundStyle(Theme.accent)
+                    .transition(.opacity)
+                }
+
                 if card.kind == .text && !text.isEmpty {
                     ShareLink(item: text) {
                         Image(systemName: "square.and.arrow.up")
@@ -141,23 +196,34 @@ struct ClipDetail: View {
         .accessibilityElement(children: .combine)
     }
 
+    private func saveChanges() {
+        guard isModified else { return }
+        originalText = text
+        onSaveText?(text)
+        withAnimation(Theme.Motion.contentIn) {
+            justSaved = true
+        }
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation(Theme.Motion.contentIn) {
+                justSaved = false
+            }
+        }
+    }
+
     // MARK: - Content
 
     @ViewBuilder
     private var content: some View {
         switch card.kind {
         case .text:
-            ScrollView {
-                Text(attributedText)
-                    .font(.system(size: 13, design: card.isMonospaced ? .monospaced : .default))
-                    .lineSpacing(3)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-                    .padding(Theme.detailPadding)
-            }
-            // A clip that fills the pane should not look like one that ends
-            // exactly at the bottom edge, so the scroll bar stays visible.
-            .scrollIndicators(.automatic)
+            ClipTextView(
+                text: $text,
+                isMonospaced: card.isMonospaced,
+                terms: terms,
+                onTextChange: { _ in }
+            )
+            .padding(Theme.detailPadding)
 
         case .image:
             VStack(spacing: 0) {
@@ -167,6 +233,13 @@ struct ClipDetail: View {
                         Image(nsImage: image)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
+                            .onDrag {
+                                if let data = loadImage(card) {
+                                    return ClipDragItemProvider.itemProvider(forImageData: data, id: card.id)
+                                }
+                                return NSItemProvider()
+                            }
+                            .help("Drag to copy image to any app")
                     } else {
                         DelayedProgressView()
                     }
@@ -199,15 +272,6 @@ struct ClipDetail: View {
         .padding(.vertical, 12)
         .frame(maxHeight: 150, alignment: .top)
         .background(Theme.canvasSubtle)
-    }
-
-    /// Marks the search terms, but only while the clip is small enough that
-    /// walking it costs less than the answer is worth.
-    private var attributedText: AttributedString {
-        guard !terms.isEmpty, text.count <= Self.highlightLimit else {
-            return AttributedString(text)
-        }
-        return SearchHighlight.attributed(text, terms: terms)
     }
 }
 

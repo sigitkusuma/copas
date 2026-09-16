@@ -58,6 +58,14 @@ struct ClipList: View {
                                         }
                                     }
                                 }
+                                .onDrag {
+                                    if card.kind == .image, let data = model.imageData(for: card) {
+                                        return ClipDragItemProvider.itemProvider(forImageData: data, id: card.id)
+                                    } else {
+                                        let text = model.fullText(for: card)
+                                        return ClipDragItemProvider.itemProvider(forText: text)
+                                    }
+                                }
                                 .contextMenu {
                                     clipContextMenu(for: card)
                                 }

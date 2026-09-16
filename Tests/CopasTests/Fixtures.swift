@@ -69,6 +69,12 @@ enum Fixtures {
         NSImage(data: pngData(width: width, height: height))!.tiffRepresentation!
     }
 
+    static func jpegData(width: Int, height: Int) -> Data {
+        let tiff = tiffData(width: width, height: height)
+        let bitmap = NSBitmapImageRep(data: tiff)!
+        return bitmap.representation(using: .jpeg, properties: [:])!
+    }
+
     /// A directory that the caller is responsible for removing.
     static func temporaryDirectory(_ label: String) throws -> URL {
         let url = FileManager.default.temporaryDirectory

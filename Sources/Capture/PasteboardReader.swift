@@ -33,8 +33,8 @@ struct PasteboardReader {
 
         let payload: (CapturedPayload.Content)? =
             imageFileContent(from: pasteboard)
-            ?? textContent(from: pasteboard)
             ?? imageContent(from: pasteboard)
+            ?? textContent(from: pasteboard)
 
         guard let payload else { return nil }
 
@@ -70,7 +70,47 @@ struct PasteboardReader {
         let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         guard size > 0, size <= maximumImageFileBytes else { return nil }
         guard let data = try? Data(contentsOf: url) else { return nil }
-        return .image(data)
+        return .image(normalizeToPNG(data))
+    }
+
+    /// Image bytes written directly, as web browsers, Preview or screenshot tools do.
+    ///
+    /// Checked before text because browsers (Safari, Chrome, etc.) write image data
+    /// alongside plain text URLs or alt strings. Checking text first causes web images
+    /// to be stored as URL strings rather than actual pictures.
+    ///
+    /// PNG is preferred and taken as-is; other formats are re-encoded to PNG so that
+    /// the same picture always hashes to the same value no matter which format the
+    /// source app happened to offer.
+    private func imageContent(from pasteboard: NSPasteboard) -> CapturedPayload.Content? {
+        if let png = pasteboard.data(forType: .png), !png.isEmpty {
+            return .image(png)
+        }
+        if let tiff = pasteboard.data(forType: .tiff), !tiff.isEmpty {
+            return .image(normalizeToPNG(tiff))
+        }
+
+        let supportedImageTypes: [NSPasteboard.PasteboardType] = [
+            NSPasteboard.PasteboardType("public.jpeg"),
+            NSPasteboard.PasteboardType("public.heic"),
+            NSPasteboard.PasteboardType("public.image"),
+            .init("image/png"),
+            .init("image/jpeg")
+        ]
+        for type in supportedImageTypes {
+            if let data = pasteboard.data(forType: type), !data.isEmpty {
+                return .image(normalizeToPNG(data))
+            }
+        }
+
+        if pasteboard.canReadObject(forClasses: [NSImage.self], options: nil),
+           let images = pasteboard.readObjects(forClasses: [NSImage.self], options: nil) as? [NSImage],
+           let first = images.first,
+           let tiff = first.tiffRepresentation {
+            return .image(normalizeToPNG(tiff))
+        }
+
+        return nil
     }
 
     /// Text, with every richer format the source app offered.
@@ -83,19 +123,15 @@ struct PasteboardReader {
         ))
     }
 
-    /// Image bytes written directly, as Preview or a screenshot tool does.
-    ///
-    /// PNG is preferred and taken as-is; TIFF is re-encoded so that the same
-    /// picture always hashes to the same value no matter which format the
-    /// source app happened to offer.
-    private func imageContent(from pasteboard: NSPasteboard) -> CapturedPayload.Content? {
-        if let png = pasteboard.data(forType: .png) { return .image(png) }
-        guard let tiff = pasteboard.data(forType: .tiff) else { return nil }
-        guard
-            let bitmap = NSBitmapImageRep(data: tiff),
-            let png = bitmap.representation(using: .png, properties: [:])
-        else { return .image(tiff) }
-        return .image(png)
+    private func normalizeToPNG(_ data: Data) -> Data {
+        if data.starts(with: [0x89, 0x50, 0x4E, 0x47]) {
+            return data
+        }
+        if let bitmap = NSBitmapImageRep(data: data),
+           let png = bitmap.representation(using: .png, properties: [:]) {
+            return png
+        }
+        return data
     }
 
     /// The app the copy came from, as far as the system will say.

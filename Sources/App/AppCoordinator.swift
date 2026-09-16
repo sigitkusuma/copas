@@ -190,7 +190,7 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         self.monitor = monitor
         self.paster = paster
         self.board = BoardWindowController(
-            model: BoardModel(clips: clips, blobs: blobs),
+            model: BoardModel(clips: clips, blobs: blobs, paster: paster, monitor: monitor),
             thumbnails: thumbnails,
             paster: paster,
             monitor: monitor,

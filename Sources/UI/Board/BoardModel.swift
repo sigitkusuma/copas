@@ -71,6 +71,8 @@ final class BoardModel {
 
     @ObservationIgnored private let clips: ClipRepository
     @ObservationIgnored private let blobs: BlobStore
+    @ObservationIgnored private let paster: Paster?
+    @ObservationIgnored private let monitor: PasteboardMonitor?
     @ObservationIgnored private var records: [ClipRecord] = []
     @ObservationIgnored private var now = Date()
     @ObservationIgnored private var observationTask: Task<Void, Never>?
@@ -132,9 +134,11 @@ final class BoardModel {
     /// count and unreachable by keyboard.
     private(set) var loadedLimit = pageLimit
 
-    init(clips: ClipRepository, blobs: BlobStore) {
+    init(clips: ClipRepository, blobs: BlobStore, paster: Paster? = nil, monitor: PasteboardMonitor? = nil) {
         self.clips = clips
         self.blobs = blobs
+        self.paster = paster
+        self.monitor = monitor
     }
 
     // MARK: - Lifetime
@@ -541,6 +545,34 @@ final class BoardModel {
             activeFilter = .all
         } else {
             onDismiss?()
+        }
+    }
+
+    // MARK: - Update Text
+
+    /// Updates the text content of a clip, persists the change in the database,
+    /// refreshes the UI sections immediately, and updates the system clipboard.
+    func updateText(_ newText: String, for id: String) {
+        do {
+            guard let updated = try clips.updateText(newText, for: id, overflow: { [blobs] data in
+                try blobs.write(data)
+            }) else { return }
+
+            if let index = records.firstIndex(where: { $0.id == id }) {
+                records[index] = updated
+                sections = ClipSectionBuilder.sections(from: records, now: now, terms: query.terms)
+            }
+
+            if let paster {
+                let changeCount = try paster.copy(updated)
+                monitor?.suppress(upTo: changeCount)
+            } else {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(newText, forType: .string)
+            }
+        } catch {
+            Log.store.error("could not update clip text: \(error, privacy: .public)")
+            NSSound.beep()
         }
     }
 }

@@ -85,7 +85,10 @@ struct BoardView: View {
                 loadImage: { model.imageData(for: $0) },
                 onTransform: { model.copyTransformed($0) },
                 onDismiss: { model.onDismiss?() },
-                onTogglePin: { model.togglePin(for: card.id) }
+                onTogglePin: { model.togglePin(for: card.id) },
+                onSaveText: { newText in
+                    model.updateText(newText, for: card.id)
+                }
             )
         } else {
             ClipDetailPlaceholder()
