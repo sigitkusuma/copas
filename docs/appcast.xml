@@ -3,6 +3,40 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.0.8</title>
+            <pubDate>Wed, 16 Sep 2026 22:58:22 +0700</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>1.0.8</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.0.8</h2>
+
+<p>
+  A major capability release adding robust image capture, system-wide drag and drop, and Apple Intelligence Writing Tools integration with live clip editing.
+</p>
+
+<ul>
+  <li>
+    <strong>Image Capture from Web & Apps:</strong> Copying images from web browsers (Safari, Chrome, Firefox) and image tools now reliably stores the picture as an image clip rather than an image URL. Supports PNG, TIFF, JPEG, and HEIC, automatically normalized to canonical PNG.
+  </li>
+  <li>
+    <strong>Drag & Drop to Any App:</strong> Drag images directly from the clipboard list or the preview panel straight into Finder, Desktop, Mail, Messages, Slack, Discord, Safari, Figma, or any file drop target. Text clips can also be dragged directly into editors.
+  </li>
+  <li>
+    <strong>Apple Intelligence Writing Tools:</strong> On macOS 15+ (Sequoia), utilize Apple Intelligence Writing Tools to proofread, rewrite in different tones (Friendly, Professional, Concise), summarize, or extract key points and tables directly inside Copas.
+  </li>
+  <li>
+    <strong>Editable Clips & Immediate Sync:</strong> Text clips can now be edited directly within the board. Press ⌘S or click Save to update the clip in the database, refresh full-text search, and synchronize the updated content directly to your active system clipboard.
+  </li>
+</ul>
+
+<p>
+  Your existing clips, settings and shortcuts are preserved seamlessly.
+</p>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.8/Copas-1.0.8.zip" length="4263758" type="application/octet-stream" sparkle:edSignature="39mBisv5WhT3XcbBESUZb3VA+8pFuYpvLWRXpz4j+nmdjdlLBdLJ11iJkZGcYusFFL8NXH9MECFoiLo/whX3Bg=="/>
+        </item>
+        <item>
             <title>1.0.7</title>
             <pubDate>Fri, 11 Sep 2026 15:29:38 +0700</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -84,31 +118,6 @@
 </p>
 ]]></description>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.6/Copas-1.0.6.zip" length="4241571" type="application/octet-stream" sparkle:edSignature="HN5mpxRzll1TNYMWy3QSj91bhbiamufvBQYmPqKZtMO76F58CnkPx9g+g9Dn68hDpA93PoqE+802W212MW4qCw=="/>
-        </item>
-        <item>
-            <title>1.0.5</title>
-            <pubDate>Thu, 10 Sep 2026 15:43:10 +0700</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>6</sparkle:version>
-            <sparkle:shortVersionString>1.0.5</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.0.5</h2>
-
-<ul>
-  <li>
-    <strong>Capture to Image (⇧⌘1)</strong> is a new sibling to Capture to Text:
-    drag out a region and keep it as a picture instead of converting it to
-    text — handy for diagrams and mockups, anything better seen than read.
-    It shows up in the menu bar and Settings alongside Capture to Text, and
-    on the Welcome screen for anyone opening Copas for the first time.
-  </li>
-</ul>
-
-<p>
-  Your clips, settings and shortcuts are untouched by this update.
-</p>
-]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.5/Copas-1.0.5.zip" length="3987302" type="application/octet-stream" sparkle:edSignature="ERmvl8oBqiqSBF/Hns8Hc9Ke6/0h9yLbQ91SVGHtByrTDwZDLn8VVMNHVm83BogfaxblMT7dfRaTefV5IHlIAg=="/>
         </item>
     </channel>
 </rss>
