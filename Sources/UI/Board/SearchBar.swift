@@ -67,7 +67,7 @@ struct SearchBar: View {
                     )
             }
             .buttonStyle(.plain)
-            .help(model.isPinnedToScreen ? "Pinned: Window stays open for multi-pasting (Click to unpin)" : "Pin to screen: Keep window open when pasting or switching apps")
+            .help(model.isPinnedToScreen ? "Pinned: Window stays open for multi-pasting (⌘⇧P to unpin)" : "Pin to screen: Keep window open when pasting or switching apps (⌘⇧P)")
             .accessibilityLabel("Pin board to screen")
 
             // Close button
@@ -85,6 +85,7 @@ struct SearchBar: View {
         }
         .padding(.horizontal, Theme.gutter)
         .frame(height: Theme.searchBarHeight)
+        .background(WindowDragView())
         .animation(Theme.Motion.contentIn, value: model.isSearching)
         .animation(Theme.Motion.contentIn, value: model.resultCount)
         // The board is summoned to find something, so the caret starts here and

@@ -32,6 +32,10 @@ it pastes into whatever you were just typing in.
 - **Text transforms (`⌘T`)**: Format snippets on the fly with 15 built-in
   transforms — case conversions, whitespace cleaning, line sorting, duplicate
   removal, JSON formatting, URL/Base64 encoding, and more.
+- **Pin-to-screen scratchpad (`⌘⇧P`)**: Lock the board on screen to paste multiple clips sequentially into documents or spreadsheets without the window dismissing.
+- **Draggable floating board**: Move the panel freely anywhere across screens using the top capsule handle or background margins.
+- **Direct drag & drop**: Drag images and text directly from the board into Finder, Slack, Discord, Mail, Figma, or documents.
+- **Apple Intelligence Writing Tools**: Proofread, rewrite in different tones, summarize, or extract tables on macOS 15+ (Sequoia) with live clip editing (`⌘S`).
 - **Smart filter pills**: Instant one-tap filter pills beneath search for All
   (`⌘⌥0`), Pinned (`⌘⌥1`), Links (`⌘⌥2`), Code (`⌘⌥3`), Images (`⌘⌥4`), and Colors
   (`⌘⌥5`).
@@ -61,9 +65,11 @@ it pastes into whatever you were just typing in.
 | `↩` | Paste into active app |
 | `⌘↩` | Copy without pasting |
 | `⌘1`–`⌘9` | Paste the nth clip |
+| `⌘⇧P` | Pin / unpin board to screen (scratchpad mode) |
 | `⌘P` | Pin / unpin clip |
 | `⌘M` | Merge selected clips (multi-selection) |
 | `⌘T` | Open text transform menu |
+| `⌘S` | Save edited clip |
 | `⌘Y` / `Space` | Expand clip preview |
 | `⌘⌫` | Delete focused or selected clips |
 | `⌘⌥0` | Filter: All |

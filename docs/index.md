@@ -358,6 +358,24 @@ Copas lives discreetly in your menu bar. When you need something you copied earl
   </div>
 
   <div class="copas-card">
+    <div class="copas-card-icon">📌</div>
+    <h3>Pin-to-Screen Scratchpad</h3>
+    <p>Press <span class="copas-kbd">⌘⇧P</span> to keep Copas floating on screen. Effortlessly paste multiple clips sequentially into documents or spreadsheets without the board dismissing.</p>
+  </div>
+
+  <div class="copas-card">
+    <div class="copas-card-icon">🎯</div>
+    <h3>Draggable Window</h3>
+    <p>Move the Copas board anywhere on screen across displays using the top capsule drag handle, search bar margins, or bottom status bar.</p>
+  </div>
+
+  <div class="copas-card">
+    <div class="copas-card-icon">🖱️</div>
+    <h3>Direct Drag & Drop</h3>
+    <p>Drag images or text clips directly from the board into Finder, Slack, Discord, Mail, Figma, or web editors without closing the window.</p>
+  </div>
+
+  <div class="copas-card">
     <div class="copas-card-icon">📤</div>
     <h3>Native Sharing & Export</h3>
     <p>Right-click any clip to Share via AirDrop, Messages, Mail, Notes, or Reminders, or export to disk as <code>.txt</code>, <code>.json</code>, <code>.md</code>, or <code>.png</code>.</p>
@@ -396,9 +414,11 @@ Copas is engineered from the ground up to respect your privacy:
 | <span class="copas-kbd">↩ Return</span> | Paste into active app |
 | <span class="copas-kbd">⌘↩</span> | Copy to clipboard without pasting |
 | <span class="copas-kbd">⌘1</span> – <span class="copas-kbd">⌘9</span> | Paste the *n*th clip immediately |
+| <span class="copas-kbd">⌘⇧P</span> | Pin or unpin board to screen (scratchpad mode) |
 | <span class="copas-kbd">⌘P</span> | Pin or unpin focused clip |
 | <span class="copas-kbd">⌘M</span> | Merge selected clips |
 | <span class="copas-kbd">⌘T</span> | Open text transform menu |
+| <span class="copas-kbd">⌘S</span> | Save edited clip |
 | <span class="copas-kbd">Space</span> / <span class="copas-kbd">⌘Y</span> | Quick Look / expand clip preview |
 | <span class="copas-kbd">⌘⌫</span> | Delete focused or selected clips |
 | <span class="copas-kbd">⌘⌥0</span> – <span class="copas-kbd">⌘⌥5</span> | Filter: All (`0`), Pinned (`1`), Links (`2`), Code (`3`), Images (`4`), Colors (`5`) |
