@@ -49,7 +49,7 @@ final class SettingsWindowController {
 
         let view = NSHostingView(rootView: content())
         let window = SettingsWindow(
-            contentRect: NSRect(origin: .zero, size: view.fittingSize),
+            contentRect: NSRect(origin: .zero, size: NSSize(width: 480, height: 440)),
             // Not resizable: the tabs are sized to the tallest of them, so there
             // is nothing a drag could reveal.
             styleMask: [.titled, .closable],

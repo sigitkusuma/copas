@@ -72,7 +72,7 @@ extension UpdateCoordinator: SPUStandardUserDriverDelegate {
 
     /// Tells Sparkle that Copas manages background update reminders gracefully
     /// without unexpectedly stealing focus or popping up intrusive alerts.
-    var supportsGentleScheduledUpdateReminders: Bool {
+    nonisolated var supportsGentleScheduledUpdateReminders: Bool {
         true
     }
 }
