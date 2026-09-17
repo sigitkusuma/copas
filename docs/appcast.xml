@@ -3,6 +3,43 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.0.9</title>
+            <pubDate>Thu, 17 Sep 2026 22:37:56 +0700</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>10</sparkle:version>
+            <sparkle:shortVersionString>1.0.9</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.0.9</h2>
+
+<p>
+  A productivity and window management release introducing Pin-to-Screen scratchpad mode for sequential multi-pasting, full board movability and dragging, direct action buttons in preview, and bounded clean image rendering.
+</p>
+
+<ul>
+  <li>
+    <strong>Pin-to-Screen (Scratchpad Mode):</strong> Press <kbd>⌘⇧P</kbd> or click the pin icon in the search bar to lock Copas on screen. The board remains open as a persistent floating palette while pasting multiple clips or switching between apps, complete with an accent badge in the status bar.
+  </li>
+  <li>
+    <strong>Effortless Sequential Multi-Pasting:</strong> Easily paste multiple items into Google Docs, Word, Notes, or Slack without repeatedly reopening the board. New dedicated <code>[Paste]</code> (<kbd>↩</kbd>) and <code>[Copy]</code> (<kbd>⌘↩</kbd>) buttons in the preview header allow instant one-click pasting.
+  </li>
+  <li>
+    <strong>Draggable Board Window:</strong> The clipboard manager panel can now be freely dragged and positioned anywhere across displays using the top capsule handle, search bar margins, or bottom status bar.
+  </li>
+  <li>
+    <strong>Bounded & Clean Image Display:</strong> Image clips now render with responsive bounded dimensions, eliminating oversized overflow and chess/checkerboard background patterns while preserving crisp 1:1 pixel fidelity.
+  </li>
+  <li>
+    <strong>Swift 6 Concurrency Updates:</strong> Refined actor isolation and concurrency conformance in settings and updater coordinators.
+  </li>
+</ul>
+
+<p>
+  Your existing clips, settings, and database are preserved seamlessly.
+</p>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.9/Copas-1.0.9.zip" length="4300836" type="application/octet-stream" sparkle:edSignature="DsfjZCKfZi5G1DHK+4WCA94o6BJ4+LJFVKd9xybeYnZFkwg2FHYo26NEbUF5Q/apMVVqbjH6ZfR0KwWdmb6uDw=="/>
+        </item>
+        <item>
             <title>1.0.8</title>
             <pubDate>Wed, 16 Sep 2026 22:58:22 +0700</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -75,49 +112,6 @@
 </p>
 ]]></description>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.7/Copas-1.0.7.zip" length="4249392" type="application/octet-stream" sparkle:edSignature="vHNPs1rPRB7uD/fZwZ1BbDEYgTW8tHnKXmmfFBm/PRs7FSTX8HqWlyJulgOJV0T2jlDR64H0I+umZUqmhmBqDw=="/>
-        </item>
-        <item>
-            <title>1.0.6</title>
-            <pubDate>Fri, 11 Sep 2026 00:37:23 +0700</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>7</sparkle:version>
-            <sparkle:shortVersionString>1.0.6</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.0.6</h2>
-
-<p>
-  A major productivity release transforming Copas into a versatile clipboard powerhouse.
-</p>
-
-<ul>
-  <li>
-    <strong>Pinned Clips (⌘P):</strong> Keep your essential snippets permanent. Pinned clips are immune to retention pruning, highlighted with a warm gold pin badge, and organized into a dedicated section at the top of the board. Filter them anytime with <code>is:pinned</code>.
-  </li>
-  <li>
-    <strong>Multi-Select &amp; Merge (⌘M):</strong> Select multiple clips with ⌘-click or Shift-click, choose your delimiter (paragraphs, newlines, commas, tabs, or spaces), and merge them directly to the pasteboard or export them together.
-  </li>
-  <li>
-    <strong>Text Transforms (⌘T):</strong> Apply 15 instant formatting transformations to any text clip on the fly — case conversions, whitespace trimming, line sorting, duplicate line removal, line numbering, URL &amp; Base64 encoding/decoding, JSON formatting/minification, quote wrapping, and HTML escaping.
-  </li>
-  <li>
-    <strong>Smart Filter Pills:</strong> Instant one-tap filter pills beneath search for All, Pinned, Links, Code, Images, and Colors.
-  </li>
-  <li>
-    <strong>Native Share Sheet &amp; File Export:</strong> Share clips directly via AirDrop, Messages, Mail, Notes, or Reminders, or export them to disk with automatic file extension detection (.txt, .json, .md, .png).
-  </li>
-  <li>
-    <strong>Right-Click Context Menu:</strong> Right-click any clip in the list to share, export, paste, copy, pin, or delete without opening the detail pane.
-  </li>
-  <li>
-    <strong>Clipboard Insights &amp; Statistics:</strong> Explore your clipboard habits in the new Stats tab in Settings (⌘,) — total history, text vs. image breakdown, storage footprint, and top source applications with app icons and proportional charts.
-  </li>
-</ul>
-
-<p>
-  Your clips, settings and shortcuts are untouched by this update.
-</p>
-]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.6/Copas-1.0.6.zip" length="4241571" type="application/octet-stream" sparkle:edSignature="HN5mpxRzll1TNYMWy3QSj91bhbiamufvBQYmPqKZtMO76F58CnkPx9g+g9Dn68hDpA93PoqE+802W212MW4qCw=="/>
         </item>
     </channel>
 </rss>
