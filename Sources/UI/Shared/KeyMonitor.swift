@@ -61,3 +61,20 @@ struct KeyMonitor: NSViewRepresentable {
         }
     }
 }
+
+/// An invisible NSView that initiates native macOS window dragging on mouse down.
+struct WindowDragView: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        DragView()
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    private final class DragView: NSView {
+        override var mouseDownCanMoveWindow: Bool { true }
+
+        override func mouseDown(with event: NSEvent) {
+            window?.performDrag(with: event)
+        }
+    }
+}

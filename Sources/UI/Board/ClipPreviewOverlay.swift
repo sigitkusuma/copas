@@ -75,7 +75,9 @@ struct ClipPreviewOverlay: View {
         case .image:
             VStack(spacing: 0) {
                 ZStack {
-                    Checkerboard()
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(Theme.canvasSubtle)
+
                     if let imageData, let image = NSImage(data: imageData) {
                         Image(nsImage: image)
                             .resizable()

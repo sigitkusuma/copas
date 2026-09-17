@@ -14,6 +14,19 @@ struct BoardView: View {
             Theme.canvas
 
             VStack(spacing: 0) {
+                // Top drag bar for moving the panel
+                HStack {
+                    Spacer()
+                    Capsule()
+                        .fill(Color.primary.opacity(0.18))
+                        .frame(width: 36, height: 4)
+                    Spacer()
+                }
+                .frame(height: 10)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .background(WindowDragView())
+
                 SearchBar(model: model)
 
                 FilterBar(model: model)
@@ -88,7 +101,9 @@ struct BoardView: View {
                 onTogglePin: { model.togglePin(for: card.id) },
                 onSaveText: { newText in
                     model.updateText(newText, for: card.id)
-                }
+                },
+                onPaste: { model.paste() },
+                onCopy: { model.copyWithoutPasting() }
             )
         } else {
             ClipDetailPlaceholder()
@@ -141,12 +156,26 @@ struct BoardView: View {
                 hint("↩", "Paste")
                 hint("⌘1-9", "Quick")
                 hint("Space", "Preview")
+                hint("⌘⇧P", model.isPinnedToScreen ? "Unpin Win" : "Pin Win")
                 hint("⌘P", model.focusedCard?.isPinned == true ? "Unpin" : "Pin")
                 hint("⌘T", "Transform")
                 hint("⌘⌫", "Delete")
                 hint("⎋", model.isSearching ? "Clear" : "Close")
             }
             Spacer(minLength: 0)
+
+            if model.isPinnedToScreen {
+                HStack(spacing: 4) {
+                    Image(systemName: "pin.fill")
+                    Text("Pinned to Screen")
+                }
+                .font(.system(size: Theme.metaSize, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(Theme.selection)
+                .clipShape(Capsule())
+            }
         }
         .font(.system(size: Theme.metaSize))
         .foregroundStyle(.secondary)
@@ -164,6 +193,7 @@ struct BoardView: View {
         .frame(height: Theme.hintBarHeight)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.canvasSubtle)
+        .background(WindowDragView())
     }
 
     private func hint(_ key: String, _ label: String) -> some View {
@@ -246,7 +276,11 @@ struct BoardView: View {
         case kVK_ANSI_T where hasCommand:
             model.showTransforms = true
         case kVK_ANSI_P where hasCommand:
-            model.togglePinFocused()
+            if flags.contains(.shift) {
+                model.togglePinToScreen()
+            } else {
+                model.togglePinFocused()
+            }
         case kVK_ANSI_M where hasCommand:
             model.mergeSelected()
 

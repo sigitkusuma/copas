@@ -159,7 +159,8 @@ struct ClipRow: View, @MainActor Equatable {
 
     private var thumbnail: some View {
         ZStack {
-            Checkerboard()
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                .fill(Theme.canvasSubtle)
             if let key = model.thumbnailKey, let image = thumbnails.cached(key) {
                 Image(nsImage: image)
                     .resizable()

@@ -19,6 +19,8 @@ struct ClipDetail: View {
     let onDismiss: () -> Void
     let onTogglePin: () -> Void
     var onSaveText: ((String) -> Void)? = nil
+    var onPaste: (() -> Void)? = nil
+    var onCopy: (() -> Void)? = nil
 
     @State private var text = ""
     @State private var originalText = ""
@@ -187,6 +189,44 @@ struct ClipDetail: View {
                 }
                 .buttonStyle(.plain)
                 .help(card.isPinned ? "Unpin clip (⌘P)" : "Pin clip (⌘P)")
+
+                if let onCopy {
+                    Button {
+                        onCopy()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "doc.on.doc")
+                            Text("Copy")
+                        }
+                        .font(.system(size: Theme.metaSize, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.secondary.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Copy to clipboard without pasting (⌘↩)")
+                }
+
+                if let onPaste {
+                    Button {
+                        onPaste()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "arrow.right.doc.on.clipboard")
+                            Text("Paste")
+                        }
+                        .font(.system(size: Theme.metaSize, weight: .semibold))
+                        .foregroundStyle(Theme.accent)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(Theme.accent.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Paste into active document (↩)")
+                }
             }
         }
         .font(.system(size: Theme.metaSize))
@@ -228,11 +268,21 @@ struct ClipDetail: View {
         case .image:
             VStack(spacing: 0) {
                 ZStack {
-                    Checkerboard()
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Theme.canvasSubtle)
+
                     if let image {
+                        // Fit image cleanly within the display container.
+                        // Large images scale down to fit; small images stay crisp and never get over-stretched.
                         Image(nsImage: image)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
+                            .frame(
+                                maxWidth: min(image.size.width, 440),
+                                maxHeight: min(image.size.height, card.recognizedText?.isEmpty == false ? 250 : 380)
+                            )
+                            .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+                            .padding(12)
                             .onDrag {
                                 if let data = loadImage(card) {
                                     return ClipDragItemProvider.itemProvider(forImageData: data, id: card.id)
@@ -245,6 +295,11 @@ struct ClipDetail: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Theme.rule, lineWidth: 1)
+                }
                 .padding(Theme.detailPadding)
 
                 if let recognized = card.recognizedText, !recognized.isEmpty {

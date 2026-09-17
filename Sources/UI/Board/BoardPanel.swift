@@ -20,6 +20,7 @@ final class BoardPanel: NSPanel {
         isFloatingPanel = true
         level = .floating
         hidesOnDeactivate = false
+        isMovable = true
         isMovableByWindowBackground = true
         isOpaque = false
         backgroundColor = .clear
@@ -49,5 +50,10 @@ final class BoardPanel: NSPanel {
     override func resignKey() {
         super.resignKey()
         onResignKey?()
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        super.mouseDown(with: event)
+        performDrag(with: event)
     }
 }
