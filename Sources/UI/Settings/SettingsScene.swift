@@ -92,6 +92,7 @@ private struct GeneralSettings: View {
                 Picker("Board position", selection: $preferences.boardEdge) {
                     Text("Near the top").tag(BoardEdge.top)
                     Text("Near the bottom").tag(BoardEdge.bottom)
+                    Text("Near mouse cursor").tag(BoardEdge.cursor)
                 }
                 .pickerStyle(.radioGroup)
             }

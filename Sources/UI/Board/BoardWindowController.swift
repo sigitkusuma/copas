@@ -24,6 +24,7 @@ final class BoardWindowController {
     /// frontmost application and the answer is gone. Everything about pasting
     /// into the right place depends on this one ordering.
     private var previousApp: NSRunningApplication?
+    private var workspaceObserver: Any?
 
     private(set) var isVisible = false
 
@@ -40,25 +41,62 @@ final class BoardWindowController {
         self.monitor = monitor
         self.edge = edge
 
+        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self else { return }
+            if let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+               app.bundleIdentifier != Bundle.main.bundleIdentifier {
+                self.previousApp = app
+            }
+        }
+
         model.onDismiss = { [weak self] in self?.dismiss() }
         model.onActivate = { [weak self] record, paste in
             self?.activate(record, paste: paste)
         }
     }
 
+    deinit {
+        if let workspaceObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
+        }
+    }
+
     // MARK: - Showing
 
     func toggle() {
-        isVisible ? dismiss() : show()
+        if isVisible {
+            if model.isPinnedToScreen && panel?.isKeyWindow == false {
+                NSApp.activate(ignoringOtherApps: true)
+                panel?.makeKeyAndOrderFront(nil)
+            } else {
+                dismiss()
+            }
+        } else {
+            show()
+        }
     }
 
     func show() {
         guard !isVisible else { return }
 
-        previousApp = NSWorkspace.shared.frontmostApplication
+        if let front = NSWorkspace.shared.frontmostApplication,
+           front.bundleIdentifier != Bundle.main.bundleIdentifier {
+            previousApp = front
+        }
 
         let panel = existingPanel()
-        panel.setFrame(BoardGeometry.frame(in: targetScreen().visibleFrame, edge: edge()), display: false)
+        panel.setFrame(
+            BoardGeometry.frame(
+                in: targetScreen().visibleFrame,
+                edge: edge(),
+                cursor: NSEvent.mouseLocation
+            ),
+            display: false
+        )
 
         model.start()
 
@@ -70,6 +108,7 @@ final class BoardWindowController {
     func dismiss(restoringFocus: Bool = true) {
         guard isVisible else { return }
         isVisible = false
+        model.isPinnedToScreen = false
 
         panel?.orderOut(nil)
         model.stop()
@@ -85,9 +124,11 @@ final class BoardWindowController {
     private func activate(_ record: ClipRecord, paste: Bool) {
         let target = previousApp
 
-        // Down first. The keystroke has to land in the other app, and a panel
-        // still on screen would be the one holding focus when it arrives.
-        dismiss(restoringFocus: false)
+        // Down first if not pinned to screen. The keystroke has to land in the other app,
+        // and a panel still on screen would be the one holding focus when it arrives.
+        if !model.isPinnedToScreen {
+            dismiss(restoringFocus: false)
+        }
 
         do {
             // Suppress before the paste, not after: the write has already moved
@@ -117,14 +158,21 @@ final class BoardWindowController {
     private func existingPanel() -> BoardPanel {
         if let panel { return panel }
 
-        let panel = BoardPanel(contentRect: BoardGeometry.frame(in: targetScreen().visibleFrame, edge: edge()))
+        let panel = BoardPanel(
+            contentRect: BoardGeometry.frame(
+                in: targetScreen().visibleFrame,
+                edge: edge(),
+                cursor: NSEvent.mouseLocation
+            )
+        )
         panel.contentView = NSHostingView(
             rootView: BoardView(model: model, thumbnails: thumbnails)
         )
         panel.onResignKey = { [weak self] in
-            // Already down when we lower it ourselves to paste; dismiss() is a
-            // no-op then, which is what keeps this from fighting that path.
-            self?.dismiss(restoringFocus: false)
+            guard let self else { return }
+            // When pinned to screen (scratchpad mode), do not dismiss on blur
+            guard !self.model.isPinnedToScreen else { return }
+            self.dismiss(restoringFocus: false)
         }
 
         self.panel = panel

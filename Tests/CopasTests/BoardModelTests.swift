@@ -471,5 +471,19 @@ final class BoardModelTests {
 
         #expect(model.cards.map(\.preview) == ["first", "third"])
     }
+
+    @Test func pinToScreenScratchpadModeTogglesAndResetsOnStart() {
+        #expect(!model.isPinnedToScreen)
+
+        model.togglePinToScreen()
+        #expect(model.isPinnedToScreen)
+
+        model.togglePinToScreen()
+        #expect(!model.isPinnedToScreen)
+
+        model.isPinnedToScreen = true
+        model.start()
+        #expect(!model.isPinnedToScreen, "Opening the board starts in normal unpinned mode")
+    }
 }
 

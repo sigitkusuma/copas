@@ -20,7 +20,7 @@ final class BoardPanel: NSPanel {
         isFloatingPanel = true
         level = .floating
         hidesOnDeactivate = false
-        isMovableByWindowBackground = false
+        isMovableByWindowBackground = true
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true

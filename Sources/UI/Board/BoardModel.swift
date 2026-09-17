@@ -160,6 +160,7 @@ final class BoardModel {
         query = SearchQuery("")
         loadedLimit = Self.pageLimit
         isVisibleGeneration += 1
+        isPinnedToScreen = false
 
         // Synchronously first, so the board paints with content on the frame it
         // appears rather than flashing an empty strip and filling in a beat
@@ -462,6 +463,16 @@ final class BoardModel {
 
     func togglePreview() {
         previewedID = previewedID == nil ? focusedID : nil
+    }
+
+    // MARK: - Window Pinning (Scratchpad mode)
+
+    /// When true, the board window acts as a persistent floating palette (scratchpad):
+    /// it does not dismiss when losing keyboard focus or pasting clips.
+    var isPinnedToScreen = false
+
+    func togglePinToScreen() {
+        isPinnedToScreen.toggle()
     }
 
     // MARK: - Pinning

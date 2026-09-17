@@ -77,4 +77,42 @@ struct BoardGeometryTests {
         let screens = [CGRect(x: 0, y: 0, width: 100, height: 100)]
         #expect(BoardGeometry.screenIndex(containing: CGPoint(x: 500, y: 500), among: screens) == nil)
     }
+
+    @Test func theBoardCentersOnCursorWhenWithinBounds() {
+        let visible = CGRect(x: 0, y: 70, width: 1_512, height: 900)
+        let cursor = CGPoint(x: 600, y: 500)
+        let frame = BoardGeometry.frame(in: visible, edge: .cursor, cursor: cursor, size: Self.size, inset: 40)
+
+        #expect(frame.width == 760)
+        #expect(frame.height == 580)
+        #expect(frame.midX == 600)
+        #expect(frame.midY == 500)
+    }
+
+    @Test func theCursorPositionClampsInsideVisibleFrame() {
+        let visible = CGRect(x: 0, y: 70, width: 1_512, height: 900)
+        // Cursor near top-right edge
+        let cursor = CGPoint(x: 1_500, y: 950)
+        let frame = BoardGeometry.frame(in: visible, edge: .cursor, cursor: cursor, size: Self.size, inset: 40)
+
+        #expect(frame.maxX == visible.maxX - 40)
+        #expect(frame.maxY == visible.maxY - 40)
+
+        // Cursor near bottom-left edge
+        let lowCursor = CGPoint(x: 10, y: 80)
+        let lowFrame = BoardGeometry.frame(in: visible, edge: .cursor, cursor: lowCursor, size: Self.size, inset: 40)
+
+        #expect(lowFrame.minX == visible.minX + 40)
+        #expect(lowFrame.minY == visible.minY + 40)
+    }
+
+    @Test func theCursorFallsBackToCenteredTopWhenCursorIsNil() {
+        let visible = CGRect(x: 0, y: 70, width: 1_512, height: 900)
+        let frame = BoardGeometry.frame(in: visible, edge: .cursor, cursor: nil, size: Self.size, inset: 40)
+
+        #expect(frame.width == 760)
+        #expect(frame.height == 580)
+        #expect(frame.midX == visible.midX)
+        #expect(frame.maxY == visible.maxY - 40)
+    }
 }

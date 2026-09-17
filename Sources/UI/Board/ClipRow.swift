@@ -11,13 +11,17 @@ struct ClipRow: View, @MainActor Equatable {
     let model: ClipCardModel
     let isFocused: Bool
     var isSelected: Bool = false
+    var shortcutIndex: Int? = nil
     let thumbnails: ThumbnailStore
 
     @State private var isHovered = false
 
     /// Only the things a row can actually look different for.
     static func == (lhs: ClipRow, rhs: ClipRow) -> Bool {
-        lhs.model == rhs.model && lhs.isFocused == rhs.isFocused && lhs.isSelected == rhs.isSelected
+        lhs.model == rhs.model
+            && lhs.isFocused == rhs.isFocused
+            && lhs.isSelected == rhs.isSelected
+            && lhs.shortcutIndex == rhs.shortcutIndex
     }
 
     var body: some View {
@@ -32,6 +36,22 @@ struct ClipRow: View, @MainActor Equatable {
                 meta
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            if let shortcutIndex, (1...9).contains(shortcutIndex) {
+                Text("⌘\(shortcutIndex)")
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(active ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.secondary))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1.5)
+                    .background(
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(active ? Theme.selection : Theme.canvasSubtle)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .strokeBorder(Theme.rule, lineWidth: 0.5)
+                    )
+            }
         }
         .padding(.horizontal, Theme.rowPadding)
         .frame(height: Theme.rowHeight)

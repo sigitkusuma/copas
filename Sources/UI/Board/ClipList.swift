@@ -18,7 +18,16 @@ struct ClipList: View {
 
     private static let doubleClickInterval: TimeInterval = NSEvent.doubleClickInterval
 
+    private var shortcutMap: [String: Int] {
+        var map: [String: Int] = [:]
+        for (index, card) in model.cards.prefix(9).enumerated() {
+            map[card.id] = index + 1
+        }
+        return map
+    }
+
     var body: some View {
+        let shortcuts = shortcutMap
         ScrollViewReader { proxy in
             ScrollView(.vertical) {
                 LazyVStack(alignment: .leading, spacing: Theme.rowSpacing, pinnedViews: [.sectionHeaders]) {
@@ -29,6 +38,7 @@ struct ClipList: View {
                                     model: card,
                                     isFocused: card.id == model.focusedID,
                                     isSelected: model.selectedIDs.contains(card.id),
+                                    shortcutIndex: shortcuts[card.id],
                                     thumbnails: thumbnails
                                 )
                                 .equatable()

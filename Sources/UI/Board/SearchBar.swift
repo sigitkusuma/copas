@@ -52,6 +52,36 @@ struct SearchBar: View {
                 .buttonStyle(.plain)
                 .help("Clear the search")
             }
+
+            // Pin to screen (scratchpad mode) toggle
+            Button {
+                model.togglePinToScreen()
+            } label: {
+                Image(systemName: model.isPinnedToScreen ? "pin.fill" : "pin")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(model.isPinnedToScreen ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.tertiary))
+                    .padding(4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(model.isPinnedToScreen ? Theme.selection : Color.clear)
+                    )
+            }
+            .buttonStyle(.plain)
+            .help(model.isPinnedToScreen ? "Pinned: Window stays open for multi-pasting (Click to unpin)" : "Pin to screen: Keep window open when pasting or switching apps")
+            .accessibilityLabel("Pin board to screen")
+
+            // Close button
+            Button {
+                model.onDismiss?()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                    .padding(4)
+            }
+            .buttonStyle(.plain)
+            .help("Close board (Escape)")
+            .accessibilityLabel("Close board")
         }
         .padding(.horizontal, Theme.gutter)
         .frame(height: Theme.searchBarHeight)

@@ -13,11 +13,13 @@ import Foundation
 enum BoardEdge: String, Sendable, CaseIterable {
     case top
     case bottom
+    case cursor
 }
 
 enum BoardGeometry {
 
-    /// A fixed-size panel, centred horizontally and weighted to one edge.
+    /// A fixed-size panel, centred horizontally and weighted to one edge, or
+    /// positioned near the mouse cursor.
     ///
     /// Centred rather than full-bleed because the board is now two panes — a
     /// list of clips and the whole of the selected one — and a list pane 1,500
@@ -30,11 +32,26 @@ enum BoardGeometry {
     static func frame(
         in visibleFrame: CGRect,
         edge: BoardEdge = .top,
+        cursor: CGPoint? = nil,
         size: CGSize = CGSize(width: Theme.boardWidth, height: Theme.boardHeight),
         inset: CGFloat = Theme.boardScreenInset
     ) -> CGRect {
         let width = min(size.width, visibleFrame.width)
         let height = min(size.height, visibleFrame.height)
+
+        if edge == .cursor, let cursor {
+            let minX = visibleFrame.minX + min(inset, max(0, (visibleFrame.width - width) / 2))
+            let maxX = max(minX, visibleFrame.maxX - width - min(inset, max(0, (visibleFrame.width - width) / 2)))
+            let rawX = cursor.x - width / 2
+            let x = min(max(rawX, minX), maxX).rounded()
+
+            let minY = visibleFrame.minY + min(inset, max(0, (visibleFrame.height - height) / 2))
+            let maxY = max(minY, visibleFrame.maxY - height - min(inset, max(0, (visibleFrame.height - height) / 2)))
+            let rawY = cursor.y - height / 2
+            let y = min(max(rawY, minY), maxY).rounded()
+
+            return CGRect(x: x, y: y, width: width, height: height)
+        }
 
         // Rounded, because a panel on a half-point boundary renders its
         // hairline rules at two different weights on alternating edges.
@@ -42,9 +59,9 @@ enum BoardGeometry {
 
         // The gap collapses rather than pushing the panel off a short screen.
         let gap = min(inset, visibleFrame.height - height)
-        let y = edge == .top
-            ? visibleFrame.maxY - height - gap
-            : visibleFrame.minY + gap
+        let y = edge == .bottom
+            ? visibleFrame.minY + gap
+            : visibleFrame.maxY - height - gap
 
         return CGRect(x: x, y: y.rounded(), width: width, height: height)
     }

@@ -139,9 +139,9 @@ struct BoardView: View {
             } else {
                 hint("↑↓", "Move")
                 hint("↩", "Paste")
-                hint("⌘↩", "Copy")
+                hint("⌘1-9", "Quick")
+                hint("Space", "Preview")
                 hint("⌘P", model.focusedCard?.isPinned == true ? "Unpin" : "Pin")
-                hint("⌘Y", "Expand")
                 hint("⌘T", "Transform")
                 hint("⌘⌫", "Delete")
                 hint("⎋", model.isSearching ? "Clear" : "Close")
@@ -229,6 +229,15 @@ struct BoardView: View {
             hasCommand ? model.copyWithoutPasting() : model.paste()
         case kVK_Escape:
             model.escape()
+
+        case kVK_Space:
+            if model.previewedID != nil {
+                model.togglePreview()
+            } else if model.searchText.isEmpty {
+                model.togglePreview()
+            } else {
+                return false
+            }
 
         case kVK_ANSI_Y where hasCommand:
             model.togglePreview()
