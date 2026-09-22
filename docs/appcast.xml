@@ -3,6 +3,15 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.0.10</title>
+            <pubDate>Tue, 22 Sep 2026 15:00:10 +0700</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>11</sparkle:version>
+            <sparkle:shortVersionString>1.0.10</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.10/Copas-1.0.10.zip" length="4309556" type="application/octet-stream" sparkle:edSignature="zBKgz4P1lw29Ver49CUOPlqXUr2Mlc1hmZ0K6q/fMIMOHvi6h99bs4uERfohS/TINBEyyxdY39e+vf5QCZ9ACw=="/>
+        </item>
+        <item>
             <title>1.0.9</title>
             <pubDate>Thu, 17 Sep 2026 22:37:56 +0700</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -72,46 +81,6 @@
 </p>
 ]]></description>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.8/Copas-1.0.8.zip" length="4263758" type="application/octet-stream" sparkle:edSignature="39mBisv5WhT3XcbBESUZb3VA+8pFuYpvLWRXpz4j+nmdjdlLBdLJ11iJkZGcYusFFL8NXH9MECFoiLo/whX3Bg=="/>
-        </item>
-        <item>
-            <title>1.0.7</title>
-            <pubDate>Fri, 11 Sep 2026 15:29:38 +0700</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>8</sparkle:version>
-            <sparkle:shortVersionString>1.0.7</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.0.7</h2>
-
-<p>
-  A stability and performance update resolving a UI freeze and refining color filters.
-</p>
-
-<ul>
-  <li>
-    <strong>Asynchronous App Icon Resolution:</strong> App icon lookups for clips
-    now resolve in the background off the main thread. Even if macOS LaunchServices
-    takes time to query custom or cloned application bundles, the Copas board
-    remains completely fluid and responsive with zero UI stalling.
-  </li>
-  <li>
-    <strong>Refined Colors Filter:</strong> The Colors smart filter now strictly
-    targets actual color values (hex codes like <code>#FF5733</code>, <code>#fff</code>,
-    and CSS functions like <code>rgb()</code>, <code>hsl()</code>), preventing
-    Markdown notes and headings starting with <code>#</code> from being mistakenly
-    categorised as colors.
-  </li>
-  <li>
-    <strong>Filter Empty State:</strong> When a filter has no matching clips, the
-    board now shows a helpful "No clips match" search empty state rather than
-    "Nothing copied yet".
-  </li>
-</ul>
-
-<p>
-  Your clips, settings and shortcuts are untouched by this update.
-</p>
-]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.7/Copas-1.0.7.zip" length="4249392" type="application/octet-stream" sparkle:edSignature="vHNPs1rPRB7uD/fZwZ1BbDEYgTW8tHnKXmmfFBm/PRs7FSTX8HqWlyJulgOJV0T2jlDR64H0I+umZUqmhmBqDw=="/>
         </item>
     </channel>
 </rss>
