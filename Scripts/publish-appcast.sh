@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 #
 # Signs and publishes the appcast entry for a release that CI already built,
-# signed, notarised and published — the one step Scripts/release.sh --skip-appcast
-# leaves undone, because it needs the Sparkle private key, and that key stays
-# on this Mac rather than in GitHub's secrets. It is the only secret in the
-# whole pipeline with no clean rotation: every copy of Copas already installed
-# has today's public key baked into Info.plist, and there is no way to tell
-# them to trust a different one after the fact.
+# signed, notarised and published. The release workflow now does this itself
+# (it holds the Sparkle key too, in SPARKLE_PRIVATE_KEY_BASE64) — this script
+# is the manual fallback: a release cut with --skip-appcast, a release whose
+# appcast PR needs redoing, or a Mac being set up to hold the key alongside
+# CI's copy. It is still the only secret in the pipeline with no clean
+# rotation: every copy of Copas already installed has today's public key baked
+# into Info.plist, and there is no way to tell them to trust a different one
+# after the fact.
 #
 #   Scripts/publish-appcast.sh v1.0.4
 #

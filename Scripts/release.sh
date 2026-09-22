@@ -14,8 +14,10 @@
 #   Scripts/release.sh v1.0.0 --draft   publish as a draft release
 #
 # --skip-appcast builds, signs, notarises and creates the GitHub release, but
-# stops short of signing the appcast — CI's job, since it never holds the
-# Sparkle private key. Finish on your Mac with Scripts/publish-appcast.sh.
+# stops short of signing the appcast. CI no longer needs this — it now holds
+# the Sparkle key too, and opens a PR with the signed appcast on its own — but
+# it's still there for a release cut by hand without touching docs/appcast.xml
+# yet. Finish later with Scripts/publish-appcast.sh.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
