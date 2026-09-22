@@ -59,6 +59,9 @@ jobs:
           KEYCHAIN_PATH="$RUNNER_TEMP/release.keychain-db"
           KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
           echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          # Reused by the Sparkle key import below, which needs its own
+          # partition-list grant on the same keychain.
+          echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
 
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
@@ -100,6 +103,34 @@ jobs:
             --keychain "$KEYCHAIN_PATH"
           rm -f "$KEY_PATH"
 
+      # Unlike the notary key, this one has no clean rotation — every copy of
+      # Copas already installed has today's public key baked into Info.plist,
+      # with no way to tell them to trust a different one later. Keeping it
+      # off CI entirely was the original design; it now lives here so the
+      # appcast doesn't depend on someone remembering to run
+      # Scripts/publish-appcast.sh by hand. The mitigation is downstream, not
+      # here: publishing the signed appcast still has to go through a
+      # branch-protected PR on main (see "Open the appcast update PR" below),
+      # so a leak of this secret alone doesn't let an attacker push a
+      # malicious update without also getting a human to approve it.
+      - name: Import the Sparkle signing key
+        env:
+          SPARKLE_PRIVATE_KEY_BASE64: ${{ secrets.SPARKLE_PRIVATE_KEY_BASE64 }}
+        run: |
+          xcodegen generate >/dev/null
+          xcodebuild -project Copas.xcodeproj -scheme Copas -configuration Release \
+            -derivedDataPath build/release -resolvePackageDependencies >/dev/null
+          SPARKLE_BIN="$(find build -type d -path '*artifacts/sparkle/Sparkle/bin' | head -1)"
+          [ -n "$SPARKLE_BIN" ] || { echo "could not find Sparkle's bin directory" >&2; exit 1; }
+
+          KEY_PATH="$RUNNER_TEMP/sparkle_private_key"
+          echo "$SPARKLE_PRIVATE_KEY_BASE64" | base64 --decode > "$KEY_PATH"
+          "$SPARKLE_BIN/generate_keys" -f "$KEY_PATH"
+          rm -f "$KEY_PATH"
+
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s \
+            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
       # Scripts/release.sh reads these rather than taking them as arguments —
       # matching how it works for a person releasing from their own Mac.
       - name: Write release.sh's configuration
@@ -109,10 +140,43 @@ jobs:
           NOTARY_PROFILE="copas-ci"
           EOF
 
+      # No --skip-appcast: the key imported above lets release.sh sign
+      # docs/appcast.xml itself, using the same build it just notarised.
       - name: Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: Scripts/release.sh "${{ github.ref_name }}" --skip-appcast
+        run: Scripts/release.sh "${{ github.ref_name }}"
+
+      # release.sh writes docs/appcast.xml but cannot push it — main is
+      # branch-protected. A PR is opened instead and set to auto-merge, so
+      # publishing the update still needs one human approval (the mitigation
+      # noted above) without needing a manual merge click on top of it.
+      - name: Open the appcast update PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet -- docs/appcast.xml; then
+            echo "docs/appcast.xml unchanged — nothing to publish"
+            exit 0
+          fi
+
+          BRANCH="appcast/${{ github.ref_name }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add docs/appcast.xml
+          git commit -m "Release ${{ github.ref_name }}: update Sparkle appcast"
+          git push origin "$BRANCH"
+
+          gh pr create --title "Release ${{ github.ref_name }}: update Sparkle appcast" \
+            --body "Signed appcast entry for \`${{ github.ref_name }}\`, generated and signed by the release workflow." \
+            --base main
+          # Non-fatal: needs "Allow auto-merge" on in the repo's settings. The
+          # PR above is the part that matters — it exists either way, waiting
+          # on the one required review — this only saves a manual merge click
+          # once that review lands.
+          gh pr merge "$BRANCH" --auto --squash \
+            || echo "::warning::couldn't enable auto-merge — merge the appcast PR by hand once it's approved"
 
       - name: Remove the temporary keychain
         if: always()
