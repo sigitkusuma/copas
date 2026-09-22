@@ -16,14 +16,14 @@ final class CaptureHUD {
 
     private init() {}
 
-    func show(_ message: String, symbol: String, duration: Duration = .milliseconds(1_400)) {
+    func show(_ message: String, symbol: String, tint: NSColor = .labelColor, duration: Duration = .milliseconds(1_400)) {
         dismissTask?.cancel()
         panel?.orderOut(nil)
 
         let icon = NSImageView()
         icon.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
         icon.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 15, weight: .medium)
-        icon.contentTintColor = .labelColor
+        icon.contentTintColor = tint
 
         let label = NSTextField(labelWithString: message)
         label.font = .systemFont(ofSize: 13, weight: .medium)
@@ -72,8 +72,14 @@ final class CaptureHUD {
             panel.setFrameOrigin(NSPoint(x: frame.midX - size.width / 2, y: frame.minY + 120))
         }
 
+        panel.alphaValue = 0
         panel.orderFrontRegardless()
         self.panel = panel
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.15
+            panel.animator().alphaValue = 1
+        }
 
         dismissTask = Task { [weak self] in
             try? await Task.sleep(for: duration)

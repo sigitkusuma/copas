@@ -45,6 +45,9 @@ final class RegionCapture {
                 // -i interactive region, -x no shutter sound, -o no window shadow
                 process.arguments = ["-i", "-x", "-o", url.path]
 
+                let clock = ContinuousClock()
+                let start = clock.now
+
                 do {
                     try process.run()
                     process.waitUntilExit()
@@ -53,6 +56,12 @@ final class RegionCapture {
                     continuation.resume(returning: false)
                     return
                 }
+
+                // This includes however long the user spent dragging — that's
+                // expected and not a bug. Logged anyway so a report of "it took
+                // a minute" can be checked against what /usr/sbin/screencapture
+                // itself reported versus what happened after it returned.
+                Log.recognition.info("screencapture -i took \(start.duration(to: clock.now), privacy: .public)")
 
                 // Escape leaves a non-zero status and no file behind.
                 let captured = process.terminationStatus == 0

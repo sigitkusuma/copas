@@ -19,11 +19,21 @@ enum TextRecognizer {
     /// even at its most accurate setting. Live Text needs a Neural Engine, so
     /// older Intel Macs fall through to Vision instead of getting nothing.
     static func recognizeText(in image: CGImage) async -> String? {
-        let prepared = ImagePreprocessor.prepare(image)
+        let clock = ContinuousClock()
 
-        if ImageAnalyzer.isSupported, let text = await recognizeWithLiveText(in: prepared) {
-            return text
+        let preprocessStart = clock.now
+        let prepared = ImagePreprocessor.prepare(image)
+        Log.recognition.info("preprocessing took \(preprocessStart.duration(to: clock.now), privacy: .public)")
+
+        if ImageAnalyzer.isSupported {
+            let start = clock.now
+            let text = await recognizeWithLiveText(in: prepared)
+            Log.recognition.info("Live Text took \(start.duration(to: clock.now), privacy: .public)")
+            if let text { return text }
         }
+
+        let start = clock.now
+        defer { Log.recognition.info("Vision fallback took \(start.duration(to: clock.now), privacy: .public)") }
         return await recognizeWithVision(in: prepared)
     }
 

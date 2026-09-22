@@ -337,8 +337,16 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Recognition is usually sub-second, but a HUD that goes straight from
+        // the crosshair to nothing for however long it takes reads as a hang
+        // either way — showing the wait removes the ambiguity.
+        CaptureHUD.shared.show("Reading text…", symbol: "text.viewfinder", duration: .seconds(30))
+
+        let clock = ContinuousClock()
+        let start = clock.now
         let text = (await TextRecognizer.recognizeText(in: image))?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        Log.recognition.info("recognizeText(in:) took \(start.duration(to: clock.now), privacy: .public)")
 
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
@@ -354,7 +362,11 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             CaptureHUD.shared.show("No text — image copied", symbol: "photo")
         } else {
             pasteboard.setString(text, forType: .string)
-            CaptureHUD.shared.show("Text copied", symbol: "text.viewfinder")
+            // The whole feature hinges on this moment being noticed — a user
+            // who doesn't see it pastes nothing and assumes the capture failed.
+            CaptureHUD.shared.show(
+                "Text copied", symbol: "checkmark.circle.fill", tint: .systemGreen, duration: .milliseconds(2_200)
+            )
         }
     }
 
