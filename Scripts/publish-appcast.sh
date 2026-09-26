@@ -79,12 +79,22 @@ fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 say "Signing the appcast"
-"$SPARKLE_BIN/generate_appcast" \
-    --download-url-prefix "https://github.com/sigitkusuma/copas/releases/download/$TAG/" \
-    --link "https://github.com/sigitkusuma/copas" \
-    -o "$ROOT/docs/appcast.xml" \
-    "$UPDATES" \
-    || die "could not generate the appcast"
+APPCAST_ARGS=(
+    --download-url-prefix "https://github.com/sigitkusuma/copas/releases/download/$TAG/"
+    --link "https://github.com/sigitkusuma/copas"
+    -o "$ROOT/docs/appcast.xml"
+    "$UPDATES"
+)
+if [ -n "${SPARKLE_PRIVATE_KEY:-}" ]; then
+    echo "$SPARKLE_PRIVATE_KEY" | "$SPARKLE_BIN/generate_appcast" --ed-key-file - "${APPCAST_ARGS[@]}" \
+        || die "could not generate the appcast"
+elif [ -n "${SPARKLE_PRIVATE_KEY_BASE64:-}" ]; then
+    echo "$SPARKLE_PRIVATE_KEY_BASE64" | base64 --decode | "$SPARKLE_BIN/generate_appcast" --ed-key-file - "${APPCAST_ARGS[@]}" \
+        || die "could not generate the appcast"
+else
+    "$SPARKLE_BIN/generate_appcast" "${APPCAST_ARGS[@]}" \
+        || die "could not generate the appcast"
+fi
 ok "docs/appcast.xml written and signed"
 
 echo

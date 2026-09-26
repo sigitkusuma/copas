@@ -126,6 +126,10 @@ jobs:
           KEY_PATH="$RUNNER_TEMP/sparkle_private_key"
           echo "$SPARKLE_PRIVATE_KEY_BASE64" | base64 --decode > "$KEY_PATH"
           "$SPARKLE_BIN/generate_keys" -f "$KEY_PATH"
+          # Allow applications to access the generic password without GUI prompts on headless CI
+          SPARKLE_KEY_CONTENT="$(cat "$KEY_PATH")"
+          security add-generic-password -a "ed25519" -s "https://sparkle-project.org" \
+            -w "$SPARKLE_KEY_CONTENT" -U -A "$KEYCHAIN_PATH" || true
           rm -f "$KEY_PATH"
 
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s \
@@ -145,6 +149,7 @@ jobs:
       - name: Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SPARKLE_PRIVATE_KEY_BASE64: ${{ secrets.SPARKLE_PRIVATE_KEY_BASE64 }}
         run: Scripts/release.sh "${{ github.ref_name }}"
 
       # release.sh writes docs/appcast.xml but cannot push it — main is
