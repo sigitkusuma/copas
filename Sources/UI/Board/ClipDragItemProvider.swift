@@ -28,7 +28,7 @@ enum ClipDragItemProvider {
         // 1. Explicit NSURL object representation — Finder and file drop targets
         provider.registerObject(fileURL as NSURL, visibility: .all)
 
-        // 2. Direct TIFF representation — for legacy graphics apps
+        // 2. Direct TIFF representation — for Photoshop, Pixelmator, and graphics apps
         if let bitmap = NSBitmapImageRep(data: data), let tiff = bitmap.tiffRepresentation {
             provider.registerDataRepresentation(
                 forTypeIdentifier: UTType.tiff.identifier,
@@ -39,10 +39,10 @@ enum ClipDragItemProvider {
             }
         }
 
-        // 3. NSImage object representation — for drag image preview and AppKit targets
-        if let image = NSImage(data: data) {
-            provider.registerObject(image, visibility: .all)
-        }
+        // Note: Do NOT register NSImage directly with registerObject. In AppKit, NSImage registers
+        // 'com.adobe.photoshop-image' and 'com.adobe.pdf' with invalid TIFF payloads, which causes
+        // Adobe Photoshop and Illustrator to fail drop ingestion. Any AppKit app requesting NSImage
+        // already loads seamlessly from the registered public.png and public.tiff representations.
 
         return provider
     }

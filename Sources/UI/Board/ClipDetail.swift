@@ -308,6 +308,14 @@ struct ClipDetail: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .onDrag {
+                    if let data = loadImage(card) {
+                        return ClipDragItemProvider.itemProvider(forImageData: data, id: card.id)
+                    }
+                    return NSItemProvider()
+                }
+                .help("Drag to copy image to any app or canvas")
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)

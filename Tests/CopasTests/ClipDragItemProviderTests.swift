@@ -12,9 +12,15 @@ struct ClipDragItemProviderTests {
         let png = Fixtures.pngData(width: 30, height: 30)
         let provider = ClipDragItemProvider.itemProvider(forImageData: png, id: "test-clip-12345678")
 
-        // Must register PNG representation and File URL for Finder/external drops
+        // Must register PNG, TIFF, and File URL for Finder, Photoshop, Figma, and external canvas drops
         #expect(provider.hasItemConformingToTypeIdentifier(UTType.png.identifier))
         #expect(provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier))
+        #expect(provider.hasItemConformingToTypeIdentifier(UTType.tiff.identifier))
+        #expect(provider.canLoadObject(ofClass: NSURL.self))
+        #expect(provider.canLoadObject(ofClass: NSImage.self))
+
+        // Must NOT register bogus com.adobe.photoshop-image which breaks Photoshop drop parsing
+        #expect(!provider.registeredTypeIdentifiers.contains("com.adobe.photoshop-image"))
 
         // Load data representation
         let loadedData = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
