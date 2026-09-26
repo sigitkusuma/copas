@@ -127,9 +127,10 @@ final class BoardWindowController {
     private func activate(_ record: ClipRecord, paste: Bool) {
         let target = previousApp
 
-        // Down first if not pinned to screen. The keystroke has to land in the other app,
+        // Down first if not pinned to screen when pasting. The keystroke has to land in the other app,
         // and a panel still on screen would be the one holding focus when it arrives.
-        if !model.isPinnedToScreen {
+        // For copyWithoutPasting, the board stays open so the user can continue working.
+        if paste && !model.isPinnedToScreen {
             dismiss(restoringFocus: false)
         }
 
@@ -142,16 +143,20 @@ final class BoardWindowController {
             if paste {
                 try paster.pressCommandV(into: target)
             } else {
-                target?.activate()
+                CaptureHUD.shared.show("Copied to clipboard", symbol: "checkmark")
             }
         } catch PasteError.notTrustedForAccessibility {
             // The clip is on the pasteboard regardless, so ⌘V by hand works.
             Log.app.notice("clip copied — Accessibility is needed to press ⌘V for you")
-            target?.activate()
+            if paste {
+                target?.activate()
+            }
             Paster.requestAccessibilityTrust()
         } catch {
             Log.app.error("could not paste: \(error, privacy: .public)")
-            target?.activate()
+            if paste {
+                target?.activate()
+            }
             NSSound.beep()
         }
     }
