@@ -3,6 +3,43 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.0.11</title>
+            <pubDate>Sat, 26 Sep 2026 20:50:09 +0700</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>12</sparkle:version>
+            <sparkle:shortVersionString>1.0.11</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.0.11</h2>
+
+<p>
+  A stability, drag-and-drop, and Apple Intelligence refinement release resolving external image dragging, Writing Tools regeneration locks, text selection affordance dismissal, and dynamic cursor-following capture feedback.
+</p>
+
+<ul>
+  <li>
+    <strong>Native Image Drag &amp; Drop to Finder and Outside Apps:</strong> Image clips can now be dragged directly out of the clipboard list or detail preview into Finder folders, Desktop, Mail compose windows, Slack, Discord, web browsers, and any application expecting a native file URL.
+  </li>
+  <li>
+    <strong>Writing Tools Regeneration Stability:</strong> Fixed an issue where regenerating text with Apple Intelligence Writing Tools on macOS 15+ could freeze the text editor. Synchronized Writing Tools lifecycle events cleanly to protect editor state and prevent animation deadlocks.
+  </li>
+  <li>
+    <strong>Apple Intelligence &amp; Siri Affordance Focus Handling:</strong> Selecting text in the editor and clicking the inline Apple Intelligence / Siri icon or context menu no longer inadvertently dismisses the clipboard panel.
+  </li>
+  <li>
+    <strong>Contextual "Text Copied" HUD:</strong> The capture completion pill and progress toasts now appear anchored right next to the selected screen region or mouse cursor on the active display, rather than fixed at the bottom of the primary monitor.
+  </li>
+  <li>
+    <strong>Instant Copy Feedback:</strong> Clicking the Copy button in the detail pane now provides immediate visual confirmation with a checkmark badge.
+  </li>
+</ul>
+
+<p>
+  Your existing clips, settings, and database are preserved seamlessly.
+</p>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.11/Copas-1.0.11.zip" length="4316002" type="application/octet-stream" sparkle:edSignature="FSR7xSo8eZDXfq5ZSORG2awLxnPYw0aA2w/OqyT9bTIJWrflWD3tDuz0t+TxcqaAyzABBS6psbHJov/E+kLmBg=="/>
+        </item>
+        <item>
             <title>1.0.10</title>
             <pubDate>Tue, 22 Sep 2026 15:00:10 +0700</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -47,40 +84,6 @@
 </p>
 ]]></description>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.9/Copas-1.0.9.zip" length="4300836" type="application/octet-stream" sparkle:edSignature="DsfjZCKfZi5G1DHK+4WCA94o6BJ4+LJFVKd9xybeYnZFkwg2FHYo26NEbUF5Q/apMVVqbjH6ZfR0KwWdmb6uDw=="/>
-        </item>
-        <item>
-            <title>1.0.8</title>
-            <pubDate>Wed, 16 Sep 2026 22:58:22 +0700</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>9</sparkle:version>
-            <sparkle:shortVersionString>1.0.8</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.0.8</h2>
-
-<p>
-  A major capability release adding robust image capture, system-wide drag and drop, and Apple Intelligence Writing Tools integration with live clip editing.
-</p>
-
-<ul>
-  <li>
-    <strong>Image Capture from Web & Apps:</strong> Copying images from web browsers (Safari, Chrome, Firefox) and image tools now reliably stores the picture as an image clip rather than an image URL. Supports PNG, TIFF, JPEG, and HEIC, automatically normalized to canonical PNG.
-  </li>
-  <li>
-    <strong>Drag & Drop to Any App:</strong> Drag images directly from the clipboard list or the preview panel straight into Finder, Desktop, Mail, Messages, Slack, Discord, Safari, Figma, or any file drop target. Text clips can also be dragged directly into editors.
-  </li>
-  <li>
-    <strong>Apple Intelligence Writing Tools:</strong> On macOS 15+ (Sequoia), utilize Apple Intelligence Writing Tools to proofread, rewrite in different tones (Friendly, Professional, Concise), summarize, or extract key points and tables directly inside Copas.
-  </li>
-  <li>
-    <strong>Editable Clips & Immediate Sync:</strong> Text clips can now be edited directly within the board. Press ⌘S or click Save to update the clip in the database, refresh full-text search, and synchronize the updated content directly to your active system clipboard.
-  </li>
-</ul>
-
-<p>
-  Your existing clips, settings and shortcuts are preserved seamlessly.
-</p>
-]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.8/Copas-1.0.8.zip" length="4263758" type="application/octet-stream" sparkle:edSignature="39mBisv5WhT3XcbBESUZb3VA+8pFuYpvLWRXpz4j+nmdjdlLBdLJ11iJkZGcYusFFL8NXH9MECFoiLo/whX3Bg=="/>
         </item>
     </channel>
 </rss>
