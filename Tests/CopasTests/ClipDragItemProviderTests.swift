@@ -12,8 +12,9 @@ struct ClipDragItemProviderTests {
         let png = Fixtures.pngData(width: 30, height: 30)
         let provider = ClipDragItemProvider.itemProvider(forImageData: png, id: "test-clip-12345678")
 
-        // Must register PNG representation
+        // Must register PNG representation and File URL for Finder/external drops
         #expect(provider.hasItemConformingToTypeIdentifier(UTType.png.identifier))
+        #expect(provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier))
 
         // Load data representation
         let loadedData = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in

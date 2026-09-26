@@ -12,7 +12,7 @@ import Foundation
 final class RegionCapture {
 
     enum Outcome: Equatable {
-        case captured(Data)
+        case captured(Data, at: NSPoint)
         /// Escape, or a click with no drag. Not an error, and not worth a HUD.
         case cancelled
         case failed
@@ -33,8 +33,9 @@ final class RegionCapture {
         defer { try? FileManager.default.removeItem(at: url) }
 
         guard await Self.run(writingTo: url) else { return .cancelled }
+        let point = NSEvent.mouseLocation
         guard let data = try? Data(contentsOf: url) else { return .failed }
-        return .captured(data)
+        return .captured(data, at: point)
     }
 
     private static func run(writingTo url: URL) async -> Bool {

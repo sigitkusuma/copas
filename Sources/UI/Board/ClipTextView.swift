@@ -9,6 +9,7 @@ struct ClipTextView: NSViewRepresentable {
     let isMonospaced: Bool
     let terms: [String]
     var onTextChange: ((String) -> Void)? = nil
+    var onWritingToolsActiveChange: ((Bool) -> Void)? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -49,7 +50,8 @@ struct ClipTextView: NSViewRepresentable {
 
         // Apple Intelligence Writing Tools integration on macOS 15+
         if #available(macOS 15.0, *) {
-            textView.writingToolsBehavior = .complete
+            textView.writingToolsBehavior = .limited
+            textView.allowedWritingToolsResultOptions = .plainText
         }
 
         textView.string = text
@@ -61,6 +63,15 @@ struct ClipTextView: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
+        context.coordinator.parent = self
+
+        // Do not mutate text or selection during active Writing Tools operations,
+        // which prevents deadlocks and text desynchronization.
+        if #available(macOS 15.0, *) {
+            if textView.isWritingToolsActive {
+                return
+            }
+        }
 
         // Only update textView.string if it differs externally, avoiding cursor reset
         if textView.string != text {
@@ -101,6 +112,26 @@ struct ClipTextView: NSViewRepresentable {
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
+            if #available(macOS 15.0, *) {
+                // If Writing Tools is currently active, avoid updating SwiftUI state
+                // on intermediate replacement steps to prevent animation freezes.
+                if textView.isWritingToolsActive {
+                    return
+                }
+            }
+            let newText = textView.string
+            if parent.text != newText {
+                parent.text = newText
+                parent.onTextChange?(newText)
+            }
+        }
+
+        func textViewWritingToolsWillBegin(_ textView: NSTextView) {
+            parent.onWritingToolsActiveChange?(true)
+        }
+
+        func textViewWritingToolsDidEnd(_ textView: NSTextView) {
+            parent.onWritingToolsActiveChange?(false)
             let newText = textView.string
             if parent.text != newText {
                 parent.text = newText

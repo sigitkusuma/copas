@@ -471,6 +471,10 @@ final class BoardModel {
     /// it does not dismiss when losing keyboard focus or pasting clips.
     var isPinnedToScreen = false
 
+    /// When true, an Apple Intelligence Writing Tools session is currently in progress,
+    /// so the board window should not dismiss on losing keyboard focus.
+    var isWritingToolsActive = false
+
     func togglePinToScreen() {
         isPinnedToScreen.toggle()
     }
