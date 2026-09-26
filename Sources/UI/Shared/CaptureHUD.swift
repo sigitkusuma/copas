@@ -16,7 +16,13 @@ final class CaptureHUD {
 
     private init() {}
 
-    func show(_ message: String, symbol: String, tint: NSColor = .labelColor, duration: Duration = .milliseconds(1_400)) {
+    func show(
+        _ message: String,
+        symbol: String,
+        tint: NSColor = .labelColor,
+        duration: Duration = .milliseconds(1_400),
+        at targetPoint: NSPoint? = nil
+    ) {
         dismissTask?.cancel()
         panel?.orderOut(nil)
 
@@ -67,9 +73,32 @@ final class CaptureHUD {
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
 
-        if let screen = NSScreen.main {
+        let point = targetPoint ?? NSEvent.mouseLocation
+        let screens = NSScreen.screens
+        let targetScreen = screens.first(where: { NSPointInRect(point, $0.frame) })
+            ?? NSScreen.main
+            ?? screens.first
+
+        if let screen = targetScreen {
             let frame = screen.visibleFrame
-            panel.setFrameOrigin(NSPoint(x: frame.midX - size.width / 2, y: frame.minY + 120))
+            // Center horizontally near the target point, clamped within the screen visible frame
+            let halfWidth = size.width / 2
+            let clampedX = min(max(point.x - halfWidth, frame.minX + 16), frame.maxX - size.width - 16)
+
+            // Place slightly offset vertically (preferring above the point so it doesn't cover
+            // what was just copied, or below if near the top edge of screen)
+            let idealYAbove = point.y + 18
+            let idealYBelow = point.y - size.height - 18
+            let finalY: CGFloat
+            if idealYAbove + size.height <= frame.maxY - 16 {
+                finalY = idealYAbove
+            } else if idealYBelow >= frame.minY + 16 {
+                finalY = idealYBelow
+            } else {
+                finalY = min(max(point.y, frame.minY + 16), frame.maxY - size.height - 16)
+            }
+
+            panel.setFrameOrigin(NSPoint(x: clampedX, y: finalY))
         }
 
         panel.alphaValue = 0

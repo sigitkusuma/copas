@@ -43,6 +43,22 @@ final class BoardPanel: NSPanel {
     /// give it a place in the window menu, which for a transient strip is wrong.
     override var canBecomeMain: Bool { false }
 
+    /// Checks whether any NSTextView within the panel currently has an active Writing Tools session.
+    var isAnyWritingToolsActive: Bool {
+        if #available(macOS 15.0, *) {
+            func check(view: NSView) -> Bool {
+                if let tv = view as? NSTextView, tv.isWritingToolsActive {
+                    return true
+                }
+                return view.subviews.contains(where: check)
+            }
+            if let cv = contentView {
+                return check(view: cv)
+            }
+        }
+        return false
+    }
+
     /// Losing focus means the user's attention went somewhere else, and a
     /// floating strip that outlives that is in the way. This is the only
     /// dismissal that is not a keystroke, and the one that makes the board feel

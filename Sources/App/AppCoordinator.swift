@@ -325,22 +325,22 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
                 return
             case .failed:
                 CaptureHUD.shared.show("Capture failed", symbol: "exclamationmark.triangle")
-            case .captured(let data):
-                await finish(capture: data)
+            case .captured(let data, let point):
+                await finish(capture: data, at: point)
             }
         }
     }
 
-    private func finish(capture data: Data) async {
+    private func finish(capture data: Data, at point: NSPoint) async {
         guard let image = ClipTextRecognition.decode(data) else {
-            CaptureHUD.shared.show("Capture failed", symbol: "exclamationmark.triangle")
+            CaptureHUD.shared.show("Capture failed", symbol: "exclamationmark.triangle", at: point)
             return
         }
 
         // Recognition is usually sub-second, but a HUD that goes straight from
         // the crosshair to nothing for however long it takes reads as a hang
         // either way — showing the wait removes the ambiguity.
-        CaptureHUD.shared.show("Reading text…", symbol: "text.viewfinder", duration: .seconds(30))
+        CaptureHUD.shared.show("Reading text…", symbol: "text.viewfinder", duration: .seconds(30), at: point)
 
         let clock = ContinuousClock()
         let start = clock.now
@@ -353,19 +353,19 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
 
         if text.isEmpty {
             guard preferences.copiesImageWhenNoTextFound else {
-                CaptureHUD.shared.show("No text found", symbol: "text.viewfinder")
+                CaptureHUD.shared.show("No text found", symbol: "text.viewfinder", at: point)
                 return
             }
             // Never throw away what the user just took the trouble to select.
             // A picture they have to read themselves beats nothing at all.
             pasteboard.setData(data, forType: .png)
-            CaptureHUD.shared.show("No text — image copied", symbol: "photo")
+            CaptureHUD.shared.show("No text — image copied", symbol: "photo", at: point)
         } else {
             pasteboard.setString(text, forType: .string)
             // The whole feature hinges on this moment being noticed — a user
             // who doesn't see it pastes nothing and assumes the capture failed.
             CaptureHUD.shared.show(
-                "Text copied", symbol: "checkmark.circle.fill", tint: .systemGreen, duration: .milliseconds(2_200)
+                "Text copied", symbol: "checkmark.circle.fill", tint: .systemGreen, duration: .milliseconds(2_200), at: point
             )
         }
     }
@@ -387,11 +387,11 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
                 return
             case .failed:
                 CaptureHUD.shared.show("Capture failed", symbol: "exclamationmark.triangle")
-            case .captured(let data):
+            case .captured(let data, let point):
                 let pasteboard = NSPasteboard.general
                 pasteboard.clearContents()
                 pasteboard.setData(data, forType: .png)
-                CaptureHUD.shared.show("Image copied", symbol: "photo")
+                CaptureHUD.shared.show("Image copied", symbol: "photo", at: point)
             }
         }
     }

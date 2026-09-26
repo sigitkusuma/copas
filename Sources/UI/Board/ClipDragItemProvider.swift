@@ -20,28 +20,15 @@ enum ClipDragItemProvider {
         let fileURL = tempDir.appendingPathComponent(filename)
         try? data.write(to: fileURL)
 
-        let provider = NSItemProvider()
+        // Initialize from file URL so Finder, Desktop, Mail, and file drop targets
+        // receive a genuine file-backed item provider (public.file-url, public.url, public.png).
+        let provider = NSItemProvider(contentsOf: fileURL) ?? NSItemProvider()
+        provider.suggestedName = "Copas-\(shortID)"
 
-        // 1. File representation — indispensable for Finder, Desktop, Mail attachments
-        provider.registerFileRepresentation(
-            forTypeIdentifier: UTType.png.identifier,
-            fileOptions: .openInPlace,
-            visibility: .all
-        ) { completion in
-            completion(fileURL, true, nil)
-            return nil
-        }
+        // 1. Explicit NSURL object representation — Finder and file drop targets
+        provider.registerObject(fileURL as NSURL, visibility: .all)
 
-        // 2. Direct PNG data representation — for browsers, chat apps (Slack, Discord, Messages)
-        provider.registerDataRepresentation(
-            forTypeIdentifier: UTType.png.identifier,
-            visibility: .all
-        ) { completion in
-            completion(data, nil)
-            return nil
-        }
-
-        // 3. Direct TIFF representation — for legacy graphics apps
+        // 2. Direct TIFF representation — for legacy graphics apps
         if let bitmap = NSBitmapImageRep(data: data), let tiff = bitmap.tiffRepresentation {
             provider.registerDataRepresentation(
                 forTypeIdentifier: UTType.tiff.identifier,
@@ -52,7 +39,7 @@ enum ClipDragItemProvider {
             }
         }
 
-        // 4. NSImage object representation — for drag image preview and AppKit targets
+        // 3. NSImage object representation — for drag image preview and AppKit targets
         if let image = NSImage(data: data) {
             provider.registerObject(image, visibility: .all)
         }

@@ -21,11 +21,13 @@ struct ClipDetail: View {
     var onSaveText: ((String) -> Void)? = nil
     var onPaste: (() -> Void)? = nil
     var onCopy: (() -> Void)? = nil
+    var onWritingToolsActiveChange: ((Bool) -> Void)? = nil
 
     @State private var text = ""
     @State private var originalText = ""
     @State private var image: NSImage?
     @State private var justSaved = false
+    @State private var justCopied = false
 
     private var isModified: Bool {
         card.kind == .text && text != originalText
@@ -193,16 +195,25 @@ struct ClipDetail: View {
                 if let onCopy {
                     Button {
                         onCopy()
+                        withAnimation(Theme.Motion.contentIn) {
+                            justCopied = true
+                        }
+                        Task {
+                            try? await Task.sleep(for: .seconds(1.5))
+                            withAnimation(Theme.Motion.contentIn) {
+                                justCopied = false
+                            }
+                        }
                     } label: {
                         HStack(spacing: 3) {
-                            Image(systemName: "doc.on.doc")
-                            Text("Copy")
+                            Image(systemName: justCopied ? "checkmark" : "doc.on.doc")
+                            Text(justCopied ? "Copied" : "Copy")
                         }
                         .font(.system(size: Theme.metaSize, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(justCopied ? Theme.accent : .secondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.08))
+                        .background(justCopied ? Theme.accent.opacity(0.12) : Color.secondary.opacity(0.08))
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
                     .buttonStyle(.plain)
@@ -261,7 +272,8 @@ struct ClipDetail: View {
                 text: $text,
                 isMonospaced: card.isMonospaced,
                 terms: terms,
-                onTextChange: { _ in }
+                onTextChange: { _ in },
+                onWritingToolsActiveChange: onWritingToolsActiveChange
             )
             .padding(Theme.detailPadding)
 
@@ -283,6 +295,7 @@ struct ClipDetail: View {
                             )
                             .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
                             .padding(12)
+                            .contentShape(Rectangle())
                             .onDrag {
                                 if let data = loadImage(card) {
                                     return ClipDragItemProvider.itemProvider(forImageData: data, id: card.id)

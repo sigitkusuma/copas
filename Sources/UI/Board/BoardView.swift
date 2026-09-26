@@ -103,7 +103,8 @@ struct BoardView: View {
                     model.updateText(newText, for: card.id)
                 },
                 onPaste: { model.paste() },
-                onCopy: { model.copyWithoutPasting() }
+                onCopy: { model.copyWithoutPasting() },
+                onWritingToolsActiveChange: { model.isWritingToolsActive = $0 }
             )
         } else {
             ClipDetailPlaceholder()

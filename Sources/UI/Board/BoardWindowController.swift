@@ -50,6 +50,9 @@ final class BoardWindowController {
             if let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
                app.bundleIdentifier != Bundle.main.bundleIdentifier {
                 self.previousApp = app
+                if self.isVisible && !self.model.isPinnedToScreen && !self.model.isWritingToolsActive {
+                    self.dismiss(restoringFocus: false)
+                }
             }
         }
 
@@ -172,7 +175,20 @@ final class BoardWindowController {
             guard let self else { return }
             // When pinned to screen (scratchpad mode), do not dismiss on blur
             guard !self.model.isPinnedToScreen else { return }
-            self.dismiss(restoringFocus: false)
+            guard !self.model.isWritingToolsActive else { return }
+
+            // Defer dismissal check to the next runloop turn so any transitioning system
+            // panels (such as Apple Intelligence Writing Tools / Siri affordance or child windows)
+            // have completed their focus transition, preventing unwanted dismissal out of the clipboard.
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                guard !self.model.isPinnedToScreen else { return }
+                guard !self.model.isWritingToolsActive else { return }
+                guard let panel = self.panel else { return }
+                guard !panel.isAnyWritingToolsActive else { return }
+                guard !panel.isKeyWindow else { return }
+                self.dismiss(restoringFocus: false)
+            }
         }
 
         self.panel = panel
