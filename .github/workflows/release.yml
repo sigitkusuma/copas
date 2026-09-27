@@ -29,6 +29,7 @@ jobs:
     # unless a workflow asks for more.
     permissions:
       contents: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
