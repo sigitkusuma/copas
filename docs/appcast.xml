@@ -3,6 +3,37 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.0.12</title>
+            <pubDate>Sun, 27 Sep 2026 07:34:37 +0000</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>13</sparkle:version>
+            <sparkle:shortVersionString>1.0.12</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.0.12</h2>
+
+<p>
+  A focused release bringing media canvas drag-and-drop support for photo and graphic editors, improved copy button interaction and persistence, and automated release signing stability.
+</p>
+
+<ul>
+  <li>
+    <strong>Drag &amp; Drop to Media Canvases (Photoshop, Figma, Pixelmator):</strong> Image clips can now be dragged directly onto image canvases, creative tools, and graphic editors without drag gesture conflicts or invalid metadata rejections.
+  </li>
+  <li>
+    <strong>Copy Button Reaction &amp; Window Persistence:</strong> Clicking the Copy button in the detail view now triggers immediate HUD feedback and leaves the clipboard board open for uninterrupted workflow rather than unexpectedly closing.
+  </li>
+  <li>
+    <strong>Sparkle Automation Stability:</strong> Headless release pipeline improvements ensuring automated appcast signing and publication without keychain modal lockups.
+  </li>
+</ul>
+
+<p>
+  Your existing clips, settings, and database are preserved seamlessly.
+</p>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.12/Copas-1.0.12.zip" length="4318067" type="application/octet-stream" sparkle:edSignature="HLThxg6WWI6aHXJ9vbThB334QpztYAM7jhZc109yscohA1DLf1wjsoaW8lPbEjtu6BrvXtlDLGnJy1zrGLLJCQ=="/>
+        </item>
+        <item>
             <title>1.0.11</title>
             <pubDate>Sat, 26 Sep 2026 20:50:09 +0700</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -47,43 +78,6 @@
             <sparkle:shortVersionString>1.0.10</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.10/Copas-1.0.10.zip" length="4309556" type="application/octet-stream" sparkle:edSignature="zBKgz4P1lw29Ver49CUOPlqXUr2Mlc1hmZ0K6q/fMIMOHvi6h99bs4uERfohS/TINBEyyxdY39e+vf5QCZ9ACw=="/>
-        </item>
-        <item>
-            <title>1.0.9</title>
-            <pubDate>Thu, 17 Sep 2026 22:37:56 +0700</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>10</sparkle:version>
-            <sparkle:shortVersionString>1.0.9</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.0.9</h2>
-
-<p>
-  A productivity and window management release introducing Pin-to-Screen scratchpad mode for sequential multi-pasting, full board movability and dragging, direct action buttons in preview, and bounded clean image rendering.
-</p>
-
-<ul>
-  <li>
-    <strong>Pin-to-Screen (Scratchpad Mode):</strong> Press <kbd>⌘⇧P</kbd> or click the pin icon in the search bar to lock Copas on screen. The board remains open as a persistent floating palette while pasting multiple clips or switching between apps, complete with an accent badge in the status bar.
-  </li>
-  <li>
-    <strong>Effortless Sequential Multi-Pasting:</strong> Easily paste multiple items into Google Docs, Word, Notes, or Slack without repeatedly reopening the board. New dedicated <code>[Paste]</code> (<kbd>↩</kbd>) and <code>[Copy]</code> (<kbd>⌘↩</kbd>) buttons in the preview header allow instant one-click pasting.
-  </li>
-  <li>
-    <strong>Draggable Board Window:</strong> The clipboard manager panel can now be freely dragged and positioned anywhere across displays using the top capsule handle, search bar margins, or bottom status bar.
-  </li>
-  <li>
-    <strong>Bounded & Clean Image Display:</strong> Image clips now render with responsive bounded dimensions, eliminating oversized overflow and chess/checkerboard background patterns while preserving crisp 1:1 pixel fidelity.
-  </li>
-  <li>
-    <strong>Swift 6 Concurrency Updates:</strong> Refined actor isolation and concurrency conformance in settings and updater coordinators.
-  </li>
-</ul>
-
-<p>
-  Your existing clips, settings, and database are preserved seamlessly.
-</p>
-]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.9/Copas-1.0.9.zip" length="4300836" type="application/octet-stream" sparkle:edSignature="DsfjZCKfZi5G1DHK+4WCA94o6BJ4+LJFVKd9xybeYnZFkwg2FHYo26NEbUF5Q/apMVVqbjH6ZfR0KwWdmb6uDw=="/>
         </item>
     </channel>
 </rss>
