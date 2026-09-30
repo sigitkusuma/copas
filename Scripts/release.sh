@@ -185,6 +185,12 @@ ok "exported"
 APP="$EXPORT/Copas.app"
 [ -d "$APP" ] || die "no app at $APP"
 
+# Apply hardened runtime and entitlements to the exported app bundle.
+codesign --force --options runtime --timestamp \
+    --entitlements "$ROOT/Config/Copas.entitlements" \
+    --sign "$SIGN_IDENTITY" "$APP"
+ok "hardened runtime applied"
+
 # ─────────────────────────────────────────────────────────────────────────────
 say "Checking the build before spending a notarisation on it"
 
@@ -203,6 +209,10 @@ SIGNATURE="$(codesign -dvv "$APP" 2>&1)"
 grep -qF "Authority=$SIGN_IDENTITY" <<<"$SIGNATURE" \
     || die "the app is not signed by $SIGN_IDENTITY"
 ok "signed by the expected Developer ID"
+
+grep -qF "flags=0x10000(runtime)" <<<"$SIGNATURE" \
+    || die "the app does not have hardened runtime enabled: $SIGNATURE"
+ok "hardened runtime verified"
 
 # Verified separately, because this is the part `codesign --deep` gets wrong:
 # nested code that passes a bundle-level check and then fails at update time.
