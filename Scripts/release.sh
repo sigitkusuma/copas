@@ -50,6 +50,20 @@ say()  { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 ok()   { printf '    \033[32m✓\033[0m %s\n' "$1"; }
 die()  { printf '    \033[31m✗ %s\033[0m\n' "$1" >&2; exit 1; }
 
+staple() {
+    local target="$1"
+    local attempts=12
+    local delay=15
+    for ((i=1; i<=attempts; i++)); do
+        if xcrun stapler staple "$target"; then
+            return 0
+        fi
+        echo "    staple attempt $i/$attempts failed (ticket may still be propagating); waiting ${delay}s..."
+        sleep "$delay"
+    done
+    return 1
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 say "Preflight"
 # Everything that can fail for a reason unrelated to the code fails here, before
@@ -224,7 +238,7 @@ ditto -c -k --keepParent "$APP" "$BUILD/notarize-app.zip"
 xcrun notarytool submit "$BUILD/notarize-app.zip" \
     --keychain-profile "$NOTARY_PROFILE" --wait \
     || die "notarisation failed"
-xcrun stapler staple "$APP" || die "could not staple the app"
+staple "$APP" || die "could not staple the app"
 xcrun stapler validate "$APP" || die "the staple does not validate"
 ok "app notarised and stapled"
 
@@ -257,7 +271,7 @@ ok "$(basename "$DMG")"
 say "Notarising the disk image"
 xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait \
     || die "DMG notarisation failed"
-xcrun stapler staple "$DMG" || die "could not staple the DMG"
+staple "$DMG" || die "could not staple the DMG"
 ok "disk image notarised and stapled"
 
 # ─────────────────────────────────────────────────────────────────────────────
