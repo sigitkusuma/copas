@@ -26,6 +26,7 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
     private var clips: ClipRepository?
     private var blobs: BlobStore?
     private var thumbnails: ThumbnailStore?
+    private var syncEngine: SyncEngine?
 
     // Capture and paste.
     private var monitor: PasteboardMonitor?
@@ -89,12 +90,31 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
         if !preferences.hasCompletedWelcome {
             welcomeWindow.show()
         }
+
+        if preferences.isSyncEnabled {
+            NSApp.registerForRemoteNotifications()
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         monitor?.stop()
         captureTask?.cancel()
         hotkeys.unregisterAll()
+        syncEngine?.stop()
+    }
+
+    func application(_ application: NSApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Log.sync.info("Registered for remote notifications")
+    }
+
+    func application(_ application: NSApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        Log.sync.error("Failed to register for remote notifications: \(error, privacy: .public)")
+    }
+
+    func application(_ application: NSApplication, didReceiveRemoteNotification userInfo: [String: Any]) {
+        Task { @MainActor in
+            await syncEngine?.handleRemoteNotification()
+        }
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
@@ -119,6 +139,10 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             self.blobs = blobs
             self.thumbnails = thumbnails
 
+            if preferences.isSyncEnabled {
+                startSyncEngine(clips: clips, blobs: blobs, thumbnails: thumbnails)
+            }
+
             tidyUp(clips: clips, blobs: blobs, thumbnails: thumbnails)
         } catch {
             // Phase 7 gives this a visible home in Settings. Until then the log is
@@ -134,9 +158,10 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
     /// rather than leaving it for the launch after next.
     private func tidyUp(clips: ClipRepository, blobs: BlobStore, thumbnails: ThumbnailStore) {
         let retention = preferences.retention
+        let isSyncEnabled = preferences.isSyncEnabled
         Task.detached(priority: .utility) {
             do {
-                let pruned = try clips.prune(retention)
+                let pruned = try clips.prune(retention, recordSyncDeletion: isSyncEnabled)
                 let live = try clips.liveKeys()
                 let removedBlobs = try blobs.collectGarbage(keeping: live.blobs)
                 let removedThumbnails = try thumbnails.collectGarbage(keeping: live.thumbnails)
@@ -252,8 +277,38 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             },
             fetchStats: { [weak self] in
                 (try? self?.clips?.statistics()) ?? ClipboardStats()
+            },
+            syncStatus: { [weak self] in self?.syncEngine?.status },
+            triggerSync: { [weak self] in
+                Task { [weak self] in
+                    await self?.syncEngine?.syncNow()
+                }
+            },
+            toggleSync: { [weak self] isEnabled in
+                self?.handleSyncToggled(isEnabled)
             }
         )
+    }
+
+    private func handleSyncToggled(_ isEnabled: Bool) {
+        if isEnabled {
+            guard let clips, let blobs, let thumbnails else { return }
+            try? clips.markAllPendingSync()
+            startSyncEngine(clips: clips, blobs: blobs, thumbnails: thumbnails)
+            NSApp.registerForRemoteNotifications()
+        } else {
+            syncEngine?.stop()
+            syncEngine = nil
+            NSApp.unregisterForRemoteNotifications()
+        }
+    }
+
+    private func startSyncEngine(clips: ClipRepository, blobs: BlobStore, thumbnails: ThumbnailStore) {
+        let engine = SyncEngine(clips: clips, blobs: blobs, thumbnails: thumbnails)
+        self.syncEngine = engine
+        Task { @MainActor in
+            await engine.start()
+        }
     }
 
     /// Pushed into the reader rather than read from it, so the capture path
@@ -267,9 +322,10 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
     private func applyRetention() {
         guard let clips, let blobs, let thumbnails else { return }
         let retention = preferences.retention
+        let isSyncEnabled = preferences.isSyncEnabled
         Task.detached(priority: .utility) {
             do {
-                _ = try clips.prune(retention)
+                _ = try clips.prune(retention, recordSyncDeletion: isSyncEnabled)
                 let live = try clips.liveKeys()
                 try blobs.collectGarbage(keeping: live.blobs)
                 try thumbnails.collectGarbage(keeping: live.thumbnails)
@@ -282,7 +338,7 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
     private func clearHistory() {
         guard let clips, let blobs, let thumbnails else { return }
         do {
-            try clips.deleteAll()
+            try clips.deleteAll(recordSyncDeletion: preferences.isSyncEnabled)
             try blobs.collectGarbage(keeping: [])
             try thumbnails.collectGarbage(keeping: [])
         } catch {

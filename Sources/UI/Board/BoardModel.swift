@@ -415,7 +415,7 @@ final class BoardModel {
         }
 
         do {
-            _ = try clips.delete(ids: [id])
+            _ = try clips.delete(ids: [id], recordSyncDeletion: true)
             if focusedID == id {
                 focusedID = successor
             }
@@ -538,7 +538,7 @@ final class BoardModel {
             return
         }
         do {
-            _ = try clips.delete(ids: Array(selectedIDs))
+            _ = try clips.delete(ids: Array(selectedIDs), recordSyncDeletion: true)
             selectedIDs.removeAll()
             focusedID = cards.first?.id
         } catch {

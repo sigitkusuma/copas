@@ -25,3 +25,6 @@ sparkle-private-key.txt
 
 # Release artifacts
 build/artifacts/
+
+# Kilo
+.kilo/

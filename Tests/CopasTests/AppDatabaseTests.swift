@@ -8,11 +8,18 @@ struct AppDatabaseTests {
 
     @Test func migrationRunsCleanOnAnEmptyDatabase() throws {
         let database = try AppDatabase.inMemory()
-        let (hasClips, hasIndex) = try database.writer.read { db in
-            (try db.tableExists("clip"), try db.tableExists("clip_fts"))
+        let (hasClips, hasIndex, hasSyncState, hasSyncDeletion) = try database.writer.read { db in
+            (
+                try db.tableExists("clip"),
+                try db.tableExists("clip_fts"),
+                try db.tableExists("sync_state"),
+                try db.tableExists("sync_deletion")
+            )
         }
         #expect(hasClips)
         #expect(hasIndex)
+        #expect(hasSyncState)
+        #expect(hasSyncDeletion)
     }
 
     /// `synchronize(withTable:)` is what keeps the index honest. If these

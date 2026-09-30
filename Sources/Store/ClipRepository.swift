@@ -168,17 +168,32 @@ final class ClipRepository: Sendable {
     /// sweeps orphans at launch instead: the failure mode is wasted bytes until
     /// the next launch rather than a broken clip, and it repairs itself.
     @discardableResult
-    func delete(ids: [String]) throws -> [ClipRecord] {
+    func delete(ids: [String], recordSyncDeletion: Bool = false) throws -> [ClipRecord] {
         guard !ids.isEmpty else { return [] }
         return try database.writer.write { db in
             let doomed = try ClipRecord.filter(keys: ids).fetchAll(db)
             _ = try ClipRecord.deleteAll(db, keys: ids)
+            if recordSyncDeletion {
+                let now = Date().timeIntervalSince1970
+                for record in doomed {
+                    let deletion = SyncDeletion(clipID: record.id, deletedAt: now)
+                    try deletion.save(db)
+                }
+            }
             return doomed
         }
     }
 
-    func deleteAll() throws {
+    func deleteAll(recordSyncDeletion: Bool = false) throws {
         _ = try database.writer.write { db in
+            if recordSyncDeletion {
+                let doomed = try ClipRecord.fetchAll(db)
+                let now = Date().timeIntervalSince1970
+                for record in doomed {
+                    let deletion = SyncDeletion(clipID: record.id, deletedAt: now)
+                    try deletion.save(db)
+                }
+            }
             try ClipRecord.deleteAll(db)
         }
     }
@@ -186,7 +201,7 @@ final class ClipRepository: Sendable {
     /// Applies a retention policy. Returns what was removed, files untouched.
     /// Pinned clips are never pruned.
     @discardableResult
-    func prune(_ policy: RetentionPolicy, now: Date = Date()) throws -> [ClipRecord] {
+    func prune(_ policy: RetentionPolicy, now: Date = Date(), recordSyncDeletion: Bool = false) throws -> [ClipRecord] {
         guard !policy.isUnlimited else { return [] }
 
         return try database.writer.write { db in
@@ -217,8 +232,16 @@ final class ClipRepository: Sendable {
 
             let toDelete = doomed.filter { !$0.value.isPinned }
             guard !toDelete.isEmpty else { return [] }
+            let doomedRecords = Array(toDelete.values)
             _ = try ClipRecord.deleteAll(db, keys: Array(toDelete.keys))
-            return toDelete.values.sorted { $0.createdAt > $1.createdAt }
+            if recordSyncDeletion {
+                let timestamp = now.timeIntervalSince1970
+                for record in doomedRecords {
+                    let deletion = SyncDeletion(clipID: record.id, deletedAt: timestamp)
+                    try deletion.save(db)
+                }
+            }
+            return doomedRecords.sorted { $0.createdAt > $1.createdAt }
         }
     }
 
@@ -336,6 +359,158 @@ final class ClipRepository: Sendable {
         ValueObservation
             .tracking(regions: [Table("clip")]) { db in
                 try Self.fetchPage(db, query: query, limit: limit, before: nil)
+            }
+            .values(in: database.writer)
+    }
+
+    // MARK: - Sync
+
+    /// Records waiting to be uploaded to CloudKit.
+    func pendingSyncRecords(limit: Int = 100) throws -> [ClipRecord] {
+        try database.writer.read { db in
+            try ClipRecord
+                .filter(ClipRecord.Columns.syncStatus == "pending")
+                .order(ClipRecord.Columns.createdAt.desc)
+                .limit(limit)
+                .fetchAll(db)
+        }
+    }
+
+    /// Deletions waiting to be uploaded to CloudKit.
+    func pendingDeletions(limit: Int = 100) throws -> [SyncDeletion] {
+        try database.writer.read { db in
+            try SyncDeletion
+                .order(SyncDeletion.Columns.deletedAt.asc)
+                .limit(limit)
+                .fetchAll(db)
+        }
+    }
+
+    /// Removes deletion tracking records after successful cloud deletion.
+    func removeSyncDeletions(ids: [String]) throws {
+        guard !ids.isEmpty else { return }
+        try database.writer.write { db in
+            _ = try SyncDeletion.deleteAll(db, keys: ids)
+        }
+    }
+
+    /// Marks records as successfully uploaded to CloudKit.
+    func markSynced(ids: [String], cloudModifiedAt: Double = Date().timeIntervalSince1970) throws {
+        guard !ids.isEmpty else { return }
+        try database.writer.write { db in
+            var args = StatementArguments([cloudModifiedAt])
+            args += StatementArguments(ids)
+            try db.execute(
+                sql: """
+                UPDATE clip
+                SET sync_status = 'synced', cloud_modified_at = ?
+                WHERE id IN (\(Self.placeholders(ids.count)))
+                """,
+                arguments: args
+            )
+        }
+    }
+
+    /// Marks records that failed uploading to CloudKit.
+    func markSyncFailed(ids: [String]) throws {
+        guard !ids.isEmpty else { return }
+        try database.writer.write { db in
+            try db.execute(
+                sql: """
+                UPDATE clip
+                SET sync_status = 'failed'
+                WHERE id IN (\(Self.placeholders(ids.count)))
+                """,
+                arguments: StatementArguments(ids)
+            )
+        }
+    }
+
+    /// Marks all clips as pending sync (used on initial sync enable).
+    func markAllPendingSync() throws {
+        try database.writer.write { db in
+            try db.execute(sql: "UPDATE clip SET sync_status = 'pending'")
+        }
+    }
+
+    /// Count of records waiting to be synced.
+    func pendingSyncCount() throws -> Int {
+        try database.writer.read { db in
+            try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM clip WHERE sync_status = 'pending'") ?? 0
+        }
+    }
+
+    /// Upserts a record received from CloudKit with newest-wins conflict resolution.
+    @discardableResult
+    func upsertFromCloud(_ incoming: ClipRecord) throws -> InsertOutcome {
+        try database.writer.write { db in
+            var toSave = incoming
+            toSave.syncStatus = "synced"
+
+            if let existing = try ClipRecord.fetchOne(db, key: incoming.id) {
+                if existing.createdAt > incoming.createdAt {
+                    var updated = existing
+                    updated.syncStatus = "pending"
+                    try updated.update(db)
+                    return .promoted(updated)
+                }
+
+                if existing.contentHash != incoming.contentHash {
+                    if let clash = try ClipRecord.filter(ClipRecord.Columns.contentHash == incoming.contentHash && ClipRecord.Columns.id != incoming.id).fetchOne(db) {
+                        try clash.delete(db)
+                    }
+                }
+
+                try toSave.update(db)
+                return .promoted(toSave)
+            }
+
+            if var existing = try ClipRecord
+                .filter(ClipRecord.Columns.contentHash == incoming.contentHash)
+                .fetchOne(db)
+            {
+                if incoming.createdAt >= existing.createdAt {
+                    existing.createdAt = incoming.createdAt
+                    if incoming.sourceBundleID != nil || incoming.sourceAppName != nil {
+                        existing.sourceBundleID = incoming.sourceBundleID
+                        existing.sourceAppName = incoming.sourceAppName
+                    }
+                }
+                existing.syncStatus = "synced"
+                existing.cloudModifiedAt = incoming.cloudModifiedAt
+                try existing.update(db)
+                return .promoted(existing)
+            }
+
+            try toSave.insert(db)
+            return .inserted(toSave)
+        }
+    }
+
+    /// Stored server change token for a zone.
+    func serverChangeToken(for zoneID: String) throws -> Data? {
+        try database.writer.read { db in
+            try SyncState.fetchOne(db, key: zoneID)?.serverChangeToken
+        }
+    }
+
+    /// Saves updated server change token for a zone.
+    func saveServerChangeToken(_ token: Data?, for zoneID: String, syncDate: Date = Date()) throws {
+        try database.writer.write { db in
+            let state = SyncState(
+                zoneID: zoneID,
+                serverChangeToken: token,
+                lastSyncAt: syncDate.timeIntervalSince1970
+            )
+            try state.save(db)
+        }
+    }
+
+    /// Observes pending sync count changes.
+    func observePendingSyncCount() -> AsyncValueObservation<Int> {
+        ValueObservation
+            .tracking(regions: [Table("clip")]) { db in
+                try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM clip WHERE sync_status = 'pending'") ?? 0
             }
             .values(in: database.writer)
     }

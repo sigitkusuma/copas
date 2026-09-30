@@ -42,6 +42,7 @@ final class PreferencesTests {
         #expect(preferences.recognizesTextInImages)
         #expect(preferences.excludedBundleIDs.isEmpty)
         #expect(preferences.retention == RetentionPolicy.default)
+        #expect(!preferences.isSyncEnabled)
         #expect(!preferences.hasCompletedWelcome)
     }
 
@@ -61,6 +62,7 @@ final class PreferencesTests {
         first.boardEdge = .bottom
         first.maximumClipCount = 50
         first.recognizesTextInImages = false
+        first.isSyncEnabled = true
         first.exclude("com.1password.1password")
 
         let second = make()
@@ -68,6 +70,7 @@ final class PreferencesTests {
         #expect(second.boardEdge == .bottom)
         #expect(second.maximumClipCount == 50)
         #expect(!second.recognizesTextInImages)
+        #expect(second.isSyncEnabled)
         #expect(second.excludedBundleIDs == ["com.1password.1password"])
     }
 

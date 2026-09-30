@@ -39,6 +39,7 @@ targets:
       - package: Sparkle
       - package: GRDB
         product: GRDB
+      - sdk: CloudKit.framework
     settings:
       base:
         # Sparkle.framework lives in Contents/Frameworks and is loaded from there.

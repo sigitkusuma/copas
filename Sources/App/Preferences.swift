@@ -36,6 +36,8 @@ final class Preferences {
         recognizesTextInImages = defaults.object(forKey: Key.recognizesTextInImages) as? Bool ?? true
         copiesImageWhenNoTextFound = defaults.object(forKey: Key.copiesImageWhenNoTextFound) as? Bool ?? true
 
+        isSyncEnabled = defaults.object(forKey: Key.isSyncEnabled) as? Bool ?? false
+
         hasCompletedWelcome = defaults.object(forKey: Key.hasCompletedWelcome) as? Bool ?? false
     }
 
@@ -115,6 +117,12 @@ final class Preferences {
         didSet { defaults.set(copiesImageWhenNoTextFound, forKey: Key.copiesImageWhenNoTextFound) }
     }
 
+    // MARK: - Sync
+
+    var isSyncEnabled: Bool {
+        didSet { defaults.set(isSyncEnabled, forKey: Key.isSyncEnabled) }
+    }
+
     // MARK: - Updates
 
     var checksForUpdatesAutomatically: Bool {
@@ -171,6 +179,7 @@ final class Preferences {
         static let receivesBetaUpdates = "updates.beta"
         static let recognizesTextInImages = "recognition.automatic"
         static let copiesImageWhenNoTextFound = "recognition.copiesImageWhenNoTextFound"
+        static let isSyncEnabled = "sync.enabled"
         static let hasCompletedWelcome = "welcome.completed"
     }
 

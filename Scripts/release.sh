@@ -158,6 +158,7 @@ xcodebuild -project Copas.xcodeproj -scheme Copas -configuration Release \
     -derivedDataPath "$BUILD" \
     -archivePath "$BUILD/Copas.xcarchive" \
     DEVELOPMENT_TEAM="$TEAM_ID" \
+    CODE_SIGNING_ALLOWED=NO \
     archive >/dev/null
 ok "archived"
 

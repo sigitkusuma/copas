@@ -173,6 +173,35 @@ final class AppDatabase: Sendable {
             )
         }
 
+        // Sync metadata columns and tracking tables for CloudKit sync.
+        migrator.registerMigration("v5.sync") { db in
+            try db.alter(table: "clip") { t in
+                // "pending", "synced", "failed"
+                t.add(column: "sync_status", .text).notNull().defaults(to: "pending")
+                // Server modification timestamp for conflict resolution
+                t.add(column: "cloud_modified_at", .double)
+            }
+
+            try db.create(
+                index: "clip_on_sync_status",
+                on: "clip",
+                columns: ["sync_status"]
+            )
+
+            // Track CK server change tokens per zone
+            try db.create(table: "sync_state") { t in
+                t.column("zone_id", .text).primaryKey()
+                t.column("server_change_token", .blob)
+                t.column("last_sync_at", .double)
+            }
+
+            // Track local deletions for CloudKit sync
+            try db.create(table: "sync_deletion") { t in
+                t.column("clip_id", .text).primaryKey()
+                t.column("deleted_at", .double).notNull()
+            }
+        }
+
         return migrator
     }
 }

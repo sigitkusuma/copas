@@ -74,6 +74,10 @@ struct ClipRecord: Codable, Sendable, Identifiable, Equatable, FetchableRecord, 
     var legacyFlags: String?
     /// Pinned clips are protected from retention pruning and pinned to the top.
     var isPinned: Bool
+    /// Sync status: "pending", "synced", or "failed".
+    var syncStatus: String
+    /// Server modification timestamp in seconds since 1970 for conflict resolution.
+    var cloudModifiedAt: Double?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -97,6 +101,8 @@ struct ClipRecord: Codable, Sendable, Identifiable, Equatable, FetchableRecord, 
         case recognizedAt = "recognized_at"
         case legacyFlags = "legacy_flags"
         case isPinned = "is_pinned"
+        case syncStatus = "sync_status"
+        case cloudModifiedAt = "cloud_modified_at"
     }
 
     enum Columns {
@@ -114,6 +120,8 @@ struct ClipRecord: Codable, Sendable, Identifiable, Equatable, FetchableRecord, 
         static let recognizedText = Column(CodingKeys.recognizedText)
         static let recognizedAt = Column(CodingKeys.recognizedAt)
         static let isPinned = Column(CodingKeys.isPinned)
+        static let syncStatus = Column(CodingKeys.syncStatus)
+        static let cloudModifiedAt = Column(CodingKeys.cloudModifiedAt)
     }
 
     var createdDate: Date { Date(timeIntervalSince1970: createdAt) }
@@ -146,6 +154,8 @@ extension ClipRecord {
         at date: Date = Date(),
         id: String = UUID().uuidString,
         isPinned: Bool = false,
+        syncStatus: String = "pending",
+        cloudModifiedAt: Double? = nil,
         rtfKey: String? = nil,
         htmlKey: String? = nil,
         overflow: (Data) throws -> String
@@ -173,7 +183,9 @@ extension ClipRecord {
             recognizedText: nil,
             recognizedAt: nil,
             legacyFlags: nil,
-            isPinned: isPinned
+            isPinned: isPinned,
+            syncStatus: syncStatus,
+            cloudModifiedAt: cloudModifiedAt
         )
     }
 
@@ -190,7 +202,9 @@ extension ClipRecord {
         source: SourceApp = SourceApp(),
         at date: Date = Date(),
         id: String = UUID().uuidString,
-        isPinned: Bool = false
+        isPinned: Bool = false,
+        syncStatus: String = "pending",
+        cloudModifiedAt: Double? = nil
     ) -> ClipRecord {
         ClipRecord(
             id: id,
@@ -213,7 +227,9 @@ extension ClipRecord {
             recognizedText: nil,
             recognizedAt: nil,
             legacyFlags: nil,
-            isPinned: isPinned
+            isPinned: isPinned,
+            syncStatus: syncStatus,
+            cloudModifiedAt: cloudModifiedAt
         )
     }
 
