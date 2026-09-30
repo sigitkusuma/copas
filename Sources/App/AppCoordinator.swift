@@ -277,34 +277,8 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             },
             fetchStats: { [weak self] in
                 (try? self?.clips?.statistics()) ?? ClipboardStats()
-            },
-            syncStatus: { [weak self] in self?.syncEngine?.status },
-            triggerSync: { [weak self] in
-                Task { [weak self] in
-                    await self?.syncEngine?.syncNow()
-                }
-            },
-            toggleSync: { [weak self] isEnabled in
-                self?.handleSyncToggled(isEnabled)
             }
         )
-    }
-
-    private func handleSyncToggled(_ isEnabled: Bool) {
-        if isEnabled {
-            guard CloudKitManager.isEntitled else {
-                preferences.isSyncEnabled = false
-                return
-            }
-            guard let clips, let blobs, let thumbnails else { return }
-            try? clips.markAllPendingSync()
-            startSyncEngine(clips: clips, blobs: blobs, thumbnails: thumbnails)
-            NSApp.registerForRemoteNotifications()
-        } else {
-            syncEngine?.stop()
-            syncEngine = nil
-            NSApp.unregisterForRemoteNotifications()
-        }
     }
 
     private func startSyncEngine(clips: ClipRepository, blobs: BlobStore, thumbnails: ThumbnailStore) {

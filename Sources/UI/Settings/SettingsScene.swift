@@ -15,9 +15,6 @@ struct SettingsActions {
     var checkForUpdates: () -> Void = {}
     var applyUpdateSettings: () -> Void = {}
     var fetchStats: () -> ClipboardStats = { ClipboardStats() }
-    var syncStatus: () -> SyncStatus? = { nil }
-    var triggerSync: () -> Void = {}
-    var toggleSync: (Bool) -> Void = { _ in }
 }
 
 struct SettingsScene: View {
@@ -38,9 +35,6 @@ struct SettingsScene: View {
 
             StatsSettings(actions: actions)
                 .tabItem { Label("Stats", systemImage: "chart.bar") }
-
-            SyncSettings(preferences: preferences, actions: actions)
-                .tabItem { Label("Sync", systemImage: "arrow.triangle.2.circlepath") }
 
             AboutSettings(preferences: preferences, actions: actions)
                 .tabItem { Label("About", systemImage: "info.circle") }
