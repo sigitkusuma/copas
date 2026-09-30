@@ -1,0 +1,17 @@
+<h2>Copas 1.1.1</h2>
+
+<p>
+  Hotfix release resolving application launch and sync menu issues on macOS.
+</p>
+
+<ul>
+  <li>
+    <strong>Launch Fix:</strong> Removed restricted developer entitlements that caused macOS AMFI (Apple Mobile File Integrity) to terminate the app on launch without an embedded provisioning profile ("The application 'Copas' can't be opened").
+  </li>
+  <li>
+    <strong>Sync Menu Crash Fix:</strong> Added entitlement capability validation before initializing CloudKit, preventing fatal framework assertions when opening or enabling the Sync settings without a provisioning profile.
+  </li>
+  <li>
+    <strong>Stability:</strong> Restored normal launch behavior and ensured safe fallback in settings while keeping all clipboard history, local database migrations, and existing features intact.
+  </li>
+</ul>

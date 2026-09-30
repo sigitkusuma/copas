@@ -30,7 +30,6 @@ CODE_SIGN_IDENTITY = Developer ID Application
 CODE_SIGN_IDENTITY[config=Debug] = -
 ENABLE_HARDENED_RUNTIME = YES
 CODE_SIGN_ENTITLEMENTS = Config/Copas.entitlements
-CODE_SIGN_ENTITLEMENTS[config=Debug] = Config/Copas.debug.entitlements
 
 SWIFT_STRICT_CONCURRENCY = complete
 

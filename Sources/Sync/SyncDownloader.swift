@@ -40,6 +40,7 @@ final class SyncDownloader: Sendable {
     }
 
     private func executeFetchChangesOperation(previousToken: CKServerChangeToken?) async throws -> Int {
+        guard let database = cloudKitManager.database else { return 0 }
         let zoneID = cloudKitManager.zoneID
         let repository = self.repository
         let blobStore = self.blobStore
@@ -119,7 +120,7 @@ final class SyncDownloader: Sendable {
                 }
             }
 
-            cloudKitManager.database.add(operation)
+            database.add(operation)
         }
     }
 }

@@ -35,6 +35,13 @@ final class SyncEngine: Sendable {
         guard !isStarted else { return }
         isStarted = true
 
+        guard CloudKitManager.isEntitled else {
+            status.isEntitled = false
+            status.errorMessage = "iCloud Sync requires a Developer ID provisioning profile with CloudKit capability."
+            Log.sync.notice("iCloud sync disabled: missing CloudKit entitlement/provisioning profile")
+            return
+        }
+
         do {
             let accountStatus = try await cloudKitManager.checkAccountStatus()
             status.accountStatus = accountStatus
@@ -65,7 +72,7 @@ final class SyncEngine: Sendable {
     }
 
     func syncNow() async {
-        guard isStarted, !status.isSyncing else { return }
+        guard isStarted, !status.isSyncing, CloudKitManager.isEntitled else { return }
         status.isSyncing = true
         status.errorMessage = nil
 
@@ -85,7 +92,7 @@ final class SyncEngine: Sendable {
     }
 
     func handleRemoteNotification() async {
-        guard isStarted else { return }
+        guard isStarted, CloudKitManager.isEntitled else { return }
         Log.sync.info("Handling remote notification for sync")
         do {
             _ = try await downloader.fetchChanges()

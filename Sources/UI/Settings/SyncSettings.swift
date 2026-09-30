@@ -8,18 +8,25 @@ struct SyncSettings: View {
         Form {
             Section {
                 Toggle("Sync clipboard history via iCloud", isOn: $preferences.isSyncEnabled)
+                    .disabled(!CloudKitManager.isEntitled)
                     .onChange(of: preferences.isSyncEnabled) { _, isEnabled in
                         actions.toggleSync(isEnabled)
                     }
             } header: {
                 Text("iCloud Sync")
             } footer: {
-                Text("Clips are stored in your private iCloud database. Only devices signed into your Apple ID can access them.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                if CloudKitManager.isEntitled {
+                    Text("Clips are stored in your private iCloud database. Only devices signed into your Apple ID can access them.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("iCloud Sync requires an Apple Developer ID provisioning profile with CloudKit capability enabled for this build.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
             }
 
-            if preferences.isSyncEnabled {
+            if preferences.isSyncEnabled && CloudKitManager.isEntitled {
                 let status = actions.syncStatus()
 
                 Section("Status") {

@@ -91,7 +91,7 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             welcomeWindow.show()
         }
 
-        if preferences.isSyncEnabled {
+        if preferences.isSyncEnabled && CloudKitManager.isEntitled {
             NSApp.registerForRemoteNotifications()
         }
     }
@@ -139,7 +139,7 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             self.blobs = blobs
             self.thumbnails = thumbnails
 
-            if preferences.isSyncEnabled {
+            if preferences.isSyncEnabled && CloudKitManager.isEntitled {
                 startSyncEngine(clips: clips, blobs: blobs, thumbnails: thumbnails)
             }
 
@@ -292,6 +292,10 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
 
     private func handleSyncToggled(_ isEnabled: Bool) {
         if isEnabled {
+            guard CloudKitManager.isEntitled else {
+                preferences.isSyncEnabled = false
+                return
+            }
             guard let clips, let blobs, let thumbnails else { return }
             try? clips.markAllPendingSync()
             startSyncEngine(clips: clips, blobs: blobs, thumbnails: thumbnails)

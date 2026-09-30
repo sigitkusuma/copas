@@ -62,6 +62,7 @@ final class SyncUploader: Sendable {
         recordIDsToDelete: [CKRecord.ID],
         clipMap: [String: ClipRecord]
     ) async throws -> Int {
+        guard let database = cloudKitManager.database else { return 0 }
         let repository = self.repository
         let blobStore = self.blobStore
 
@@ -143,7 +144,7 @@ final class SyncUploader: Sendable {
                 }
             }
 
-            cloudKitManager.database.add(operation)
+            database.add(operation)
         }
     }
 }

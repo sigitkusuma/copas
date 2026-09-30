@@ -5,6 +5,7 @@ import CloudKit
 @MainActor
 @Observable
 final class SyncStatus {
+    var isEntitled: Bool = true
     var isSyncing: Bool = false
     var lastSyncDate: Date?
     var errorMessage: String?
@@ -12,10 +13,13 @@ final class SyncStatus {
     var accountStatus: CKAccountStatus = .couldNotDetermine
 
     var isAccountAvailable: Bool {
-        accountStatus == .available
+        isEntitled && accountStatus == .available
     }
 
     var accountDescription: String {
+        guard isEntitled else {
+            return "Provisioning Profile Required"
+        }
         switch accountStatus {
         case .available:
             return "Connected"
