@@ -3,6 +3,30 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.1.2</title>
+            <pubDate>Wed, 30 Sep 2026 14:46:55 +0000</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>16</sparkle:version>
+            <sparkle:shortVersionString>1.1.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.1.2</h2>
+
+<p>
+  Restores the settings interface to the original five-tab layout (General, History, Text, Stats, and About).
+</p>
+
+<ul>
+  <li>
+    <strong>Settings:</strong> Restored the original settings view configuration, removing the non-functional sync tab pending provisioning profile availability.
+  </li>
+  <li>
+    <strong>Stability:</strong> All local clipboard history, database migrations, and existing features remain fully preserved and stable.
+  </li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.2/Copas-1.1.2.zip" length="4437850" type="application/octet-stream" sparkle:edSignature="YFc8lVN4d8f11N4k2mBRT0BQs9h7hNqs1PeLXPdXrqcbPaq7TveVXNd46ZozSr16VJXsEhCzv22knifpjyvKBg=="/>
+        </item>
+        <item>
             <title>1.1.1</title>
             <pubDate>Wed, 30 Sep 2026 14:18:59 +0000</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -65,37 +89,6 @@
 </p>
 ]]></description>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.0/Copas-1.1.0.zip" length="4454603" type="application/octet-stream" sparkle:edSignature="eKLRtrnPf0i9+oerbkS8tP2P2YgLn0UX0qSxcdV9IvEP5PHGAAiNEfGgfp+phv8uR6QC3CK5AaYYEYd0yABSCQ=="/>
-        </item>
-        <item>
-            <title>1.0.12</title>
-            <pubDate>Sun, 27 Sep 2026 07:34:37 +0000</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>13</sparkle:version>
-            <sparkle:shortVersionString>1.0.12</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.0.12</h2>
-
-<p>
-  A focused release bringing media canvas drag-and-drop support for photo and graphic editors, improved copy button interaction and persistence, and automated release signing stability.
-</p>
-
-<ul>
-  <li>
-    <strong>Drag &amp; Drop to Media Canvases (Photoshop, Figma, Pixelmator):</strong> Image clips can now be dragged directly onto image canvases, creative tools, and graphic editors without drag gesture conflicts or invalid metadata rejections.
-  </li>
-  <li>
-    <strong>Copy Button Reaction &amp; Window Persistence:</strong> Clicking the Copy button in the detail view now triggers immediate HUD feedback and leaves the clipboard board open for uninterrupted workflow rather than unexpectedly closing.
-  </li>
-  <li>
-    <strong>Sparkle Automation Stability:</strong> Headless release pipeline improvements ensuring automated appcast signing and publication without keychain modal lockups.
-  </li>
-</ul>
-
-<p>
-  Your existing clips, settings, and database are preserved seamlessly.
-</p>
-]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.0.12/Copas-1.0.12.zip" length="4318067" type="application/octet-stream" sparkle:edSignature="HLThxg6WWI6aHXJ9vbThB334QpztYAM7jhZc109yscohA1DLf1wjsoaW8lPbEjtu6BrvXtlDLGnJy1zrGLLJCQ=="/>
         </item>
     </channel>
 </rss>
