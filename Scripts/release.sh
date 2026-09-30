@@ -69,6 +69,17 @@ say "Preflight"
 # Everything that can fail for a reason unrelated to the code fails here, before
 # a ten-minute build and a notarisation round trip have been spent.
 
+# Provisioning profile for iCloud entitlements (required for CloudKit access outside MAS)
+# Set PROVISIONING_PROFILE_UUID in your .env to the UUID of a Developer ID profile
+# with iCloud CloudKit capability enabled for com.sigitkusuma.copas.
+if [ -z "${PROVISIONING_PROFILE_UUID:-}" ]; then
+    echo "    ⚠️  PROVISIONING_PROFILE_UUID not set — building without iCloud entitlements"
+    echo "    To enable iCloud sync, set PROVISIONING_PROFILE_UUID to the UUID of a Developer ID"
+    echo "    provisioning profile that includes the iCloud.com.sigitkusuma.copas container."
+else
+    echo "    Using provisioning profile: $PROVISIONING_PROFILE_UUID"
+fi
+
 [ -f "$ROOT/.env" ] || die "no .env — copy .env.example and fill it in"
 # shellcheck disable=SC1091
 source "$ROOT/.env"
@@ -190,6 +201,18 @@ codesign --force --options runtime --timestamp \
     --entitlements "$ROOT/Config/Copas.entitlements" \
     --sign "$SIGN_IDENTITY" "$APP"
 ok "hardened runtime applied"
+
+# Embed the provisioning profile if set (required for iCloud entitlements outside MAS)
+if [ -n "${PROVISIONING_PROFILE_UUID:-}" ]; then
+    PROVISIONING_PROFILE_PATH="$HOME/Library/MobileDevice/Provisioning Profiles/${PROVISIONING_PROFILE_UUID}.provisionprofile"
+    if [ -f "$PROVISIONING_PROFILE_PATH" ]; then
+        cp "$PROVISIONING_PROFILE_PATH" "$APP/Contents/embedded.provisionprofile"
+        ok "embedded provisioning profile"
+    else
+        echo "    ⚠️  provisioning profile not found at $PROVISIONING_PROFILE_PATH"
+        echo "    Skipping embed; iCloud entitlements will not be active in the built app."
+    fi
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 say "Checking the build before spending a notarisation on it"
