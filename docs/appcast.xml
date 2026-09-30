@@ -3,6 +3,32 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.1.3</title>
+            <pubDate>Wed, 30 Sep 2026 15:22:29 +0000</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>17</sparkle:version>
+            <sparkle:shortVersionString>1.1.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.1.3</h2>
+
+<p>
+  Enables iCloud Sync via embedded Developer ID provisioning profile.
+</p>
+
+<ul>
+  <li>
+    <strong>iCloud Sync:</strong> The app now includes a provisioning profile that grants the
+    com.apple.developer.icloud-container-identifiers entitlement, allowing CloudKit to
+    initialize without requiring a Mac App Store distribution.
+  </li>
+  <li>
+    <strong>Stability:</strong> No change to local clipboard history, database, or existing
+    features. The sync engine remains gated behind the Sync toggle in Settings.
+  </li>
+</ul>]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.3/Copas-1.1.3.zip" length="4437845" type="application/octet-stream" sparkle:edSignature="GepYpNkw7CBmMV3NDFb5qu52peMOq27LYzs2Z7Ha7k/uWG0CpWNcBY5bShNi0Q7gU6Wg/zHgCgvZmcf9PUDXCw=="/>
+        </item>
+        <item>
             <title>1.1.2</title>
             <pubDate>Wed, 30 Sep 2026 14:46:55 +0000</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -52,43 +78,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.1/Copas-1.1.1.zip" length="4459113" type="application/octet-stream" sparkle:edSignature="TDy/uE3swYSji1knE5JRnYwZo7JmU23+kun/QKMVeuIvGNrE7xCBDOAqV5X7xK0ABKVkfVLQBYg6AYvFnoLuAw=="/>
-        </item>
-        <item>
-            <title>1.1.0</title>
-            <pubDate>Wed, 30 Sep 2026 13:29:12 +0000</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>14</sparkle:version>
-            <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.1.0</h2>
-
-<p>
-  A major release introducing seamless clipboard history synchronization across all your Macs using private iCloud and CloudKit.
-</p>
-
-<ul>
-  <li>
-    <strong>CloudKit Synchronization:</strong> Sync your clipboard history across your Macs securely. Clips—including rich text, large text, and images—are synchronized automatically across devices signed into the same Apple ID.
-  </li>
-  <li>
-    <strong>Private by Design &amp; Opt-In:</strong> Sync is completely opt-in and disabled by default. Your data is stored solely in your private CloudKit database with no external servers, accounts, or analytics.
-  </li>
-  <li>
-    <strong>Instant Remote Push Updates:</strong> Changes made on one Mac appear almost instantaneously on other Macs through CloudKit database subscriptions and background notifications.
-  </li>
-  <li>
-    <strong>Smart Conflict Resolution &amp; Deletions:</strong> Seamless newest-wins conflict resolution and cross-device deletion tracking keep your history in lockstep without duplicate cards.
-  </li>
-  <li>
-    <strong>Dedicated Sync Settings:</strong> A new Sync tab in Settings allows you to easily toggle synchronization, view your iCloud connection status, inspect pending uploads, and trigger manual syncs on demand.
-  </li>
-</ul>
-
-<p>
-  Your existing local clips, pinned items, and settings are preserved seamlessly.
-</p>
-]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.0/Copas-1.1.0.zip" length="4454603" type="application/octet-stream" sparkle:edSignature="eKLRtrnPf0i9+oerbkS8tP2P2YgLn0UX0qSxcdV9IvEP5PHGAAiNEfGgfp+phv8uR6QC3CK5AaYYEYd0yABSCQ=="/>
         </item>
     </channel>
 </rss>
