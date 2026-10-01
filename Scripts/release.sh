@@ -196,13 +196,8 @@ ok "exported"
 APP="$EXPORT/Copas.app"
 [ -d "$APP" ] || die "no app at $APP"
 
-# Apply hardened runtime and entitlements to the exported app bundle.
-codesign --force --options runtime --timestamp \
-    --entitlements "$ROOT/Config/Copas.entitlements" \
-    --sign "$SIGN_IDENTITY" "$APP"
-ok "hardened runtime applied"
-
 # Embed the provisioning profile if set (required for iCloud entitlements outside MAS)
+# This MUST happen before codesigning so the profile is included in the signature.
 if [ -n "${PROVISIONING_PROFILE_UUID:-}" ]; then
     PROVISIONING_PROFILE_PATH="$HOME/Library/MobileDevice/Provisioning Profiles/${PROVISIONING_PROFILE_UUID}.provisionprofile"
     if [ -f "$PROVISIONING_PROFILE_PATH" ]; then
@@ -213,6 +208,12 @@ if [ -n "${PROVISIONING_PROFILE_UUID:-}" ]; then
         echo "    Skipping embed; iCloud entitlements will not be active in the built app."
     fi
 fi
+
+# Apply hardened runtime and entitlements to the exported app bundle.
+codesign --force --options runtime --timestamp \
+    --entitlements "$ROOT/Config/Copas.entitlements" \
+    --sign "$SIGN_IDENTITY" "$APP"
+ok "hardened runtime applied"
 
 # ─────────────────────────────────────────────────────────────────────────────
 say "Checking the build before spending a notarisation on it"

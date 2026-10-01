@@ -90,6 +90,19 @@ jobs:
           echo "SIGN_IDENTITY=$SIGN_IDENTITY" >> "$GITHUB_ENV"
           echo "imported: $SIGN_IDENTITY"
 
+      - name: Install the provisioning profile
+        env:
+          PROVISION_PROFILE_BASE64: ${{ secrets.PROVISION_PROFILE_BASE64 }}
+        run: |
+          if [ -n "$PROVISION_PROFILE_BASE64" ]; then
+            PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+            mkdir -p "$PROFILES_DIR"
+            echo "$PROVISION_PROFILE_BASE64" | base64 --decode > "$PROFILES_DIR/b810177a-3562-4650-80f8-42090c516910.provisionprofile"
+            echo "Installed provisioning profile b810177a-3562-4650-80f8-42090c516910.provisionprofile"
+          else
+            echo "::warning::PROVISION_PROFILE_BASE64 secret not set"
+          fi
+
       - name: Store notarisation credentials
         env:
           NOTARY_KEY_P8_BASE64: ${{ secrets.NOTARY_KEY_P8_BASE64 }}
@@ -137,6 +150,7 @@ jobs:
           cat > .env <<EOF
           SIGN_IDENTITY="$SIGN_IDENTITY"
           NOTARY_PROFILE="copas-ci"
+          PROVISIONING_PROFILE_UUID="b810177a-3562-4650-80f8-42090c516910"
           EOF
 
       # No --skip-appcast: the key imported above lets release.sh sign
