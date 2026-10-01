@@ -64,6 +64,19 @@ staple() {
     return 1
 }
 
+notarize() {
+    local target="$1"
+    local attempts=3
+    for ((i=1; i<=attempts; i++)); do
+        if xcrun notarytool submit "$target" --keychain-profile "$NOTARY_PROFILE" --wait --timeout 10m; then
+            return 0
+        fi
+        echo "    notary submission failed or timed out, retrying (attempt $i/$attempts)..."
+        sleep 10
+    done
+    return 1
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 say "Preflight"
 # Everything that can fail for a reason unrelated to the code fails here, before
@@ -269,9 +282,7 @@ say "Notarising the app"
 # the stapled bundle afterwards. Packaging first and stapling the packages leaves
 # the app inside them unstapled, which is fine until somebody copies it out.
 ditto -c -k --keepParent "$APP" "$BUILD/notarize-app.zip"
-xcrun notarytool submit "$BUILD/notarize-app.zip" \
-    --keychain-profile "$NOTARY_PROFILE" --wait \
-    || die "notarisation failed"
+notarize "$BUILD/notarize-app.zip" || die "notarisation failed"
 staple "$APP" || die "could not staple the app"
 xcrun stapler validate "$APP" || die "the staple does not validate"
 ok "app notarised and stapled"
@@ -303,8 +314,7 @@ codesign --sign "$SIGN_IDENTITY" "$DMG"
 ok "$(basename "$DMG")"
 
 say "Notarising the disk image"
-xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait \
-    || die "DMG notarisation failed"
+notarize "$DMG" || die "DMG notarisation failed"
 staple "$DMG" || die "could not staple the DMG"
 ok "disk image notarised and stapled"
 
