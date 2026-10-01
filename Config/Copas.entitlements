@@ -7,6 +7,10 @@
 	     sandbox. This is also why it cannot ship on the Mac App Store. -->
 	<key>com.apple.security.app-sandbox</key>
 	<false/>
+	<key>com.apple.application-identifier</key>
+	<string>Q6HKRLR2CN.com.sigitkusuma.copas</string>
+	<key>com.apple.developer.icloud-container-environment</key>
+	<string>Production</string>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
 		<string>iCloud.com.sigitkusuma.copas</string>

@@ -45,11 +45,9 @@ struct SettingsScene: View {
             AboutSettings(preferences: preferences, actions: actions)
                 .tabItem { Label("About", systemImage: "info.circle") }
         }
-        // Sized to the tallest tab rather than left to shrink-wrap the one that
-        // happens to be showing: a Settings window that resizes as you move
-        // between tabs is disorienting, and one sized to the shortest tab quietly
-        // hides the bottom of the others.
-        .frame(width: 480, height: 440)
+        // Sized to fit all six tabs cleanly across the top toolbar without
+        // collapsing into an overflow menu, and tall enough for the tallest tab.
+        .frame(width: 580, height: 440)
     }
 }
 

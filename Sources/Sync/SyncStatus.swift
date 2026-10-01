@@ -28,7 +28,7 @@ final class SyncStatus {
         case .restricted:
             return "iCloud Restricted"
         case .couldNotDetermine:
-            return "Checking..."
+            return errorMessage != nil ? "Unavailable" : "Checking..."
         case .temporarilyUnavailable:
             return "Temporarily Unavailable"
         @unknown default:
