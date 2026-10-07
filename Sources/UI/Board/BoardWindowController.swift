@@ -25,8 +25,12 @@ final class BoardWindowController {
     /// into the right place depends on this one ordering.
     private var previousApp: NSRunningApplication?
     private var workspaceObserver: Any?
+    private var resetObservers: [Any] = []
 
-    private(set) var isVisible = false
+    /// Asked of the panel itself rather than remembered in a flag. A flag can
+    /// say "open" about a window the system has since ordered out, and then
+    /// every shortcut press would be spent on the dismissal of nothing.
+    var isVisible: Bool { panel?.isVisible ?? false }
 
     init(
         model: BoardModel,
@@ -50,9 +54,36 @@ final class BoardWindowController {
             if let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
                app.bundleIdentifier != Bundle.main.bundleIdentifier {
                 self.previousApp = app
-                if self.isVisible && !self.model.isPinnedToScreen && !self.model.isWritingToolsActive {
-                    self.dismiss(restoringFocus: false)
+                guard self.isVisible && !self.model.isPinnedToScreen && !self.model.isWritingToolsActive else {
+                    return
                 }
+                // The notification can arrive after the board has already
+                // taken over, describing an activation that happened before
+                // the shortcut was pressed. Only a foreign app that is
+                // frontmost *now* means the user has really moved on.
+                guard NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+                        != Bundle.main.bundleIdentifier else {
+                    Log.app.notice("board: ignored a stale activation of \(app.bundleIdentifier ?? "?", privacy: .public)")
+                    return
+                }
+                self.dismiss(restoringFocus: false, reason: "activated \(app.bundleIdentifier ?? "another app")")
+            }
+        }
+
+        // A window that has sat hidden through sleep or a change of displays is
+        // the one most likely to come back wrong, and a fresh panel costs
+        // nothing. Dropped only while hidden, so a pinned board is never pulled
+        // out from under the user.
+        let resetEvents: [(NotificationCenter, Notification.Name)] = [
+            (NSWorkspace.shared.notificationCenter, NSWorkspace.didWakeNotification),
+            (NSWorkspace.shared.notificationCenter, NSWorkspace.activeSpaceDidChangeNotification),
+            (NotificationCenter.default, NSApplication.didChangeScreenParametersNotification),
+        ]
+        resetObservers = resetEvents.map { center, name in
+            center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                guard let self, !self.isVisible, self.panel != nil else { return }
+                Log.app.notice("board: dropped the hidden panel after \(name.rawValue, privacy: .public)")
+                self.panel = nil
             }
         }
 
@@ -66,6 +97,10 @@ final class BoardWindowController {
         if let workspaceObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
         }
+        for observer in resetObservers {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
     // MARK: - Showing
@@ -76,7 +111,7 @@ final class BoardWindowController {
                 NSApp.activate(ignoringOtherApps: true)
                 panel?.makeKeyAndOrderFront(nil)
             } else {
-                dismiss()
+                dismiss(reason: "toggled")
             }
         } else {
             show()
@@ -105,12 +140,12 @@ final class BoardWindowController {
 
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
-        isVisible = true
+        Log.app.notice("board: shown, visible=\(panel.isVisible) key=\(panel.isKeyWindow)")
     }
 
-    func dismiss(restoringFocus: Bool = true) {
+    func dismiss(restoringFocus: Bool = true, reason: String = "requested") {
         guard isVisible else { return }
-        isVisible = false
+        Log.app.notice("board: dismissed — \(reason, privacy: .public)")
         model.isPinnedToScreen = false
 
         panel?.orderOut(nil)
@@ -131,7 +166,7 @@ final class BoardWindowController {
         // and a panel still on screen would be the one holding focus when it arrives.
         // For copyWithoutPasting, the board stays open so the user can continue working.
         if paste && !model.isPinnedToScreen {
-            dismiss(restoringFocus: false)
+            dismiss(restoringFocus: false, reason: "pasted")
         }
 
         do {
@@ -192,7 +227,7 @@ final class BoardWindowController {
                 guard let panel = self.panel else { return }
                 guard !panel.isAnyWritingToolsActive else { return }
                 guard !panel.isKeyWindow else { return }
-                self.dismiss(restoringFocus: false)
+                self.dismiss(restoringFocus: false, reason: "lost key")
             }
         }
 

@@ -162,6 +162,11 @@ final class BoardModel {
         isVisibleGeneration += 1
         isPinnedToScreen = false
 
+        // A Writing Tools session that was cut short (the text view torn down
+        // mid-session) never reports its end, and a flag stuck on would stop the
+        // board from ever dismissing itself on blur again.
+        isWritingToolsActive = false
+
         // Synchronously first, so the board paints with content on the frame it
         // appears rather than flashing an empty strip and filling in a beat
         // later. The observation below only ever *changes* what is already there.
@@ -169,6 +174,7 @@ final class BoardModel {
 
         observe()
 
+        clockTask?.cancel()
         clockTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(10))
