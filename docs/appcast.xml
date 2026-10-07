@@ -3,6 +3,33 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.1.6</title>
+            <pubDate>Wed, 07 Oct 2026 14:43:28 +0000</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>20</sparkle:version>
+            <sparkle:shortVersionString>1.1.6</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.1.6</h2>
+
+<p>
+  Fixes the clipboard board sometimes not opening after Copas has been running for a long time.
+</p>
+
+<ul>
+  <li>
+    <strong>Board Reliability:</strong> The board now checks whether its window is really on screen instead of trusting a remembered state, ignores stale app-switch events, and rebuilds its hidden window after sleep and wake, Space changes, or display changes.
+  </li>
+  <li>
+    <strong>Writing Tools:</strong> A stuck Writing Tools state can no longer keep the board from opening.
+  </li>
+  <li>
+    <strong>Diagnostics:</strong> The board now logs why it opens and closes, which makes any recurrence easier to track down.
+  </li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.6/Copas-1.1.6.zip" length="4470941" type="application/octet-stream" sparkle:edSignature="N9O8cl/0TjkgOC1c6OrFIKaYrrkqwHCrYMcr7sw9vjA6UecsF/DBl2tjivl5BAnjknZuoQZQUGhViOyjftB0CA=="/>
+        </item>
+        <item>
             <title>1.1.4</title>
             <pubDate>Thu, 01 Oct 2026 02:56:49 +0000</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -54,30 +81,6 @@
   </li>
 </ul>]]></description>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.3/Copas-1.1.3.zip" length="4437845" type="application/octet-stream" sparkle:edSignature="GepYpNkw7CBmMV3NDFb5qu52peMOq27LYzs2Z7Ha7k/uWG0CpWNcBY5bShNi0Q7gU6Wg/zHgCgvZmcf9PUDXCw=="/>
-        </item>
-        <item>
-            <title>1.1.2</title>
-            <pubDate>Wed, 30 Sep 2026 14:46:55 +0000</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>16</sparkle:version>
-            <sparkle:shortVersionString>1.1.2</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.1.2</h2>
-
-<p>
-  Restores the settings interface to the original five-tab layout (General, History, Text, Stats, and About).
-</p>
-
-<ul>
-  <li>
-    <strong>Settings:</strong> Restored the original settings view configuration, removing the non-functional sync tab pending provisioning profile availability.
-  </li>
-  <li>
-    <strong>Stability:</strong> All local clipboard history, database migrations, and existing features remain fully preserved and stable.
-  </li>
-</ul>
-]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.2/Copas-1.1.2.zip" length="4437850" type="application/octet-stream" sparkle:edSignature="YFc8lVN4d8f11N4k2mBRT0BQs9h7hNqs1PeLXPdXrqcbPaq7TveVXNd46ZozSr16VJXsEhCzv22knifpjyvKBg=="/>
         </item>
     </channel>
 </rss>
