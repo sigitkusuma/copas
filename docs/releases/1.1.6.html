@@ -1,0 +1,17 @@
+<h2>Copas 1.1.6</h2>
+
+<p>
+  Fixes the clipboard board sometimes not opening after Copas has been running for a long time.
+</p>
+
+<ul>
+  <li>
+    <strong>Board Reliability:</strong> The board now checks whether its window is really on screen instead of trusting a remembered state, ignores stale app-switch events, and rebuilds its hidden window after sleep and wake, Space changes, or display changes.
+  </li>
+  <li>
+    <strong>Writing Tools:</strong> A stuck Writing Tools state can no longer keep the board from opening.
+  </li>
+  <li>
+    <strong>Diagnostics:</strong> The board now logs why it opens and closes, which makes any recurrence easier to track down.
+  </li>
+</ul>
