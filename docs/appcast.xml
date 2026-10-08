@@ -3,6 +3,36 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.2.0</title>
+            <pubDate>Thu, 08 Oct 2026 06:54:27 +0000</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>21</sparkle:version>
+            <sparkle:shortVersionString>1.2.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.2.0</h2>
+
+<p>
+  Screenshots taken with Capture to Image now open in an editor before they are copied, so you can mark them up, crop them or shrink them first.
+</p>
+
+<ul>
+  <li>
+    <strong>Mark up:</strong> Draw rectangles and circles, add text, highlight an area, or blur one to hide sensitive information. Pick a colour, line weight or text size, move marks around afterwards, and undo or redo any step.
+  </li>
+  <li>
+    <strong>Crop and resize:</strong> Drag out the part of the picture to keep, or resize it by percentage or by typing a width or height. The aspect ratio is kept, and both can be undone.
+  </li>
+  <li>
+    <strong>Done copies:</strong> Press Return or choose Done and the finished picture goes to the clipboard and into your history, and focus returns to the app you were in so you can paste straight away. Escape or Cancel discards the screenshot without copying it.
+  </li>
+  <li>
+    <strong>Same size on paste:</strong> Edited Retina screenshots keep their pixel density, so they paste at the size they were taken, not twice as large.
+  </li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.2.0/Copas-1.2.0.zip" length="4588378" type="application/octet-stream" sparkle:edSignature="iW5G6neRj9SpAOS/Nsbe0QofLCzxGH85/NqdnrXP6k2aLtjx8HiZDeRhm1qRvRQjU1aDTT+r6+T16axhq3hTAA=="/>
+        </item>
+        <item>
             <title>1.1.6</title>
             <pubDate>Wed, 07 Oct 2026 14:43:28 +0000</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -55,32 +85,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.4/Copas-1.1.4.zip" length="4467130" type="application/octet-stream" sparkle:edSignature="9oOagCuBejG9+rEYMw1dWLbpEvKOqf5AnIAZZnwKMcfk6MEIhqDpsJpucojRngaSZZO1BC7/hTbi5osoYBLuDg=="/>
-        </item>
-        <item>
-            <title>1.1.3</title>
-            <pubDate>Wed, 30 Sep 2026 15:22:29 +0000</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>17</sparkle:version>
-            <sparkle:shortVersionString>1.1.3</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.1.3</h2>
-
-<p>
-  Enables iCloud Sync via embedded Developer ID provisioning profile.
-</p>
-
-<ul>
-  <li>
-    <strong>iCloud Sync:</strong> The app now includes a provisioning profile that grants the
-    com.apple.developer.icloud-container-identifiers entitlement, allowing CloudKit to
-    initialize without requiring a Mac App Store distribution.
-  </li>
-  <li>
-    <strong>Stability:</strong> No change to local clipboard history, database, or existing
-    features. The sync engine remains gated behind the Sync toggle in Settings.
-  </li>
-</ul>]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.3/Copas-1.1.3.zip" length="4437845" type="application/octet-stream" sparkle:edSignature="GepYpNkw7CBmMV3NDFb5qu52peMOq27LYzs2Z7Ha7k/uWG0CpWNcBY5bShNi0Q7gU6Wg/zHgCgvZmcf9PUDXCw=="/>
         </item>
     </channel>
 </rss>
