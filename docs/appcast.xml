@@ -3,6 +3,27 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.2.1</title>
+            <pubDate>Thu, 08 Oct 2026 09:53:58 +0000</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>22</sparkle:version>
+            <sparkle:shortVersionString>1.2.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.2.1</h2>
+
+<p>
+  Fixes the buttons at the top of a clip being cut off.
+</p>
+
+<ul>
+  <li>
+    <strong>Clip header buttons:</strong> Pin, Copy and Paste now always show their full labels instead of wrapping or being clipped. While you are editing a clip, Revert and Save keep their labels too, and the source app name steps aside so the age and size still fit.
+  </li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.2.1/Copas-1.2.1.zip" length="4590079" type="application/octet-stream" sparkle:edSignature="U7JTam/0iATeaxGAa3jUgbuWmQCfAi+IjWx1qeN4X6+f5+1DwlhNwqcYJ5T2SFzok9Q93h2tjZZFqH564DD7Bw=="/>
+        </item>
+        <item>
             <title>1.2.0</title>
             <pubDate>Thu, 08 Oct 2026 06:54:27 +0000</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -58,33 +79,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.6/Copas-1.1.6.zip" length="4470941" type="application/octet-stream" sparkle:edSignature="N9O8cl/0TjkgOC1c6OrFIKaYrrkqwHCrYMcr7sw9vjA6UecsF/DBl2tjivl5BAnjknZuoQZQUGhViOyjftB0CA=="/>
-        </item>
-        <item>
-            <title>1.1.4</title>
-            <pubDate>Thu, 01 Oct 2026 02:56:49 +0000</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>18</sparkle:version>
-            <sparkle:shortVersionString>1.1.4</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.1.4</h2>
-
-<p>
-  Restores the Sync tab in Settings and enables full iCloud synchronization across Macs with an embedded Apple Developer ID provisioning profile.
-</p>
-
-<ul>
-  <li>
-    <strong>Sync Settings Tab:</strong> Restored the dedicated Sync tab in Settings with the iCloud Sync toggle, real-time connection status, pending sync count, and manual "Sync Now" button.
-  </li>
-  <li>
-    <strong>iCloud CloudKit Integration:</strong> Fully entitled for private CloudKit container <code>iCloud.com.sigitkusuma.copas</code> via Apple Developer ID provisioning profile.
-  </li>
-  <li>
-    <strong>Security &amp; Privacy:</strong> Stored securely via GitHub Actions secrets without exposing provisioning profiles in the public repository.
-  </li>
-</ul>
-]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.4/Copas-1.1.4.zip" length="4467130" type="application/octet-stream" sparkle:edSignature="9oOagCuBejG9+rEYMw1dWLbpEvKOqf5AnIAZZnwKMcfk6MEIhqDpsJpucojRngaSZZO1BC7/hTbi5osoYBLuDg=="/>
         </item>
     </channel>
 </rss>
