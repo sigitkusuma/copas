@@ -55,6 +55,7 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
 
     // Region capture, shared by Capture to Text and Capture to Image.
     private let regionCapture = RegionCapture()
+    private let screenshotEditor = ScreenshotEditorWindowController()
 
     private var updates: UpdateCoordinator?
 
@@ -432,7 +433,7 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
 
     // MARK: - Capture to image
 
-    /// Drag out a region of the screen and keep it as a picture.
+    /// Drag out a region of the screen, edit it, and keep it as a picture.
     ///
     /// Writing the PNG straight to the pasteboard is deliberate: it lets the
     /// same monitor → ingest → recognise pipeline that handles every other
@@ -448,9 +449,13 @@ final class AppCoordinator: NSObject, NSApplicationDelegate {
             case .failed:
                 CaptureHUD.shared.show("Capture failed", symbol: "exclamationmark.triangle")
             case .captured(let data, let point):
+                // The editor is the next step: mark up, crop or resize, then
+                // Done. Cancelling copies nothing — the user looked at the
+                // picture and decided against it.
+                guard let edited = await screenshotEditor.edit(data) else { return }
                 let pasteboard = NSPasteboard.general
                 pasteboard.clearContents()
-                pasteboard.setData(data, forType: .png)
+                pasteboard.setData(edited, forType: .png)
                 CaptureHUD.shared.show("Image copied", symbol: "photo", at: point)
             }
         }
