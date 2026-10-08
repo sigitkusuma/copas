@@ -87,20 +87,30 @@ struct ClipDetail: View {
 
     private var header: some View {
         HStack(spacing: 6) {
+            // The actions on the right cannot shrink, so when the pane is too
+            // narrow for everything, the metadata gives way instead: the source
+            // name first (priority 0, truncated), then the size and age.
             if let icon = AppIconCache.shared.icon(for: card.sourceBundleID) {
                 Image(nsImage: icon)
                     .resizable()
                     .frame(width: 14, height: 14)
+                    .layoutPriority(1)
             }
 
-            Text(card.sourceName ?? "Unknown")
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            // Revert and Save take the room while there are unsaved edits, and a
+            // name cut down to its first letter reads as a glitch, so it goes
+            // entirely for as long as they are showing.
+            if !isModified {
+                Text(card.sourceName ?? "Unknown")
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .layoutPriority(0)
 
-            Text("·").foregroundStyle(.quaternary)
-            Text(card.timestamp).monospacedDigit()
-            Text("·").foregroundStyle(.quaternary)
-            Text(card.detail)
+                Text("·").foregroundStyle(.quaternary).layoutPriority(1)
+            }
+            Text(card.timestamp).monospacedDigit().lineLimit(1).layoutPriority(1)
+            Text("·").foregroundStyle(.quaternary).layoutPriority(1)
+            Text(card.detail).lineLimit(1).layoutPriority(1)
 
             Spacer(minLength: 8)
 
@@ -239,6 +249,10 @@ struct ClipDetail: View {
                     .help("Paste into active document (↩)")
                 }
             }
+            // At natural width and ahead of everything else, or SwiftUI trims
+            // the button labels ("Pin", "Copy", "Paste") to fit instead.
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(2)
         }
         .font(.system(size: Theme.metaSize))
         .foregroundStyle(.tertiary)
