@@ -3,6 +3,39 @@
     <channel>
         <title>Copas</title>
         <item>
+            <title>1.3.0</title>
+            <pubDate>Sat, 31 Oct 2026 14:49:47 +0000</pubDate>
+            <link>https://github.com/sigitkusuma/copas</link>
+            <sparkle:version>23</sparkle:version>
+            <sparkle:shortVersionString>1.3.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Copas 1.3.0</h2>
+
+<p>
+  Screenshots taken with Capture to Image come out sharper, and the editor can now enhance them.
+</p>
+
+<ul>
+  <li>
+    <strong>Enhance:</strong> A new Enhance button in the editor sharpens text and edges in the copied picture. Marks you draw stay exactly as drawn.
+  </li>
+  <li>
+    <strong>Sharper resizing:</strong> Shrinking a screenshot now keeps small text crisp and at its full weight, even at 50% or 25%.
+  </li>
+  <li>
+    <strong>200% resize:</strong> A new 200% option enlarges captures from non-Retina displays.
+  </li>
+  <li>
+    <strong>Untouched means identical:</strong> A screenshot you don't change is copied exactly as it was captured.
+  </li>
+  <li>
+    <strong>Full colour depth:</strong> Captures from HDR and wide-colour displays keep their full colour depth.
+  </li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.3.0/Copas-1.3.0.zip" length="4601784" type="application/octet-stream" sparkle:edSignature="ZsxeWNJofsVWQR2bXgNIBS+BRxZrGJvYAsLexDgsjumHao+f+RufMXUupbdU9Jllsa3X+9MwvI7sEj+X7RIKCQ=="/>
+        </item>
+        <item>
             <title>1.2.1</title>
             <pubDate>Thu, 08 Oct 2026 09:53:58 +0000</pubDate>
             <link>https://github.com/sigitkusuma/copas</link>
@@ -52,33 +85,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.2.0/Copas-1.2.0.zip" length="4588378" type="application/octet-stream" sparkle:edSignature="iW5G6neRj9SpAOS/Nsbe0QofLCzxGH85/NqdnrXP6k2aLtjx8HiZDeRhm1qRvRQjU1aDTT+r6+T16axhq3hTAA=="/>
-        </item>
-        <item>
-            <title>1.1.6</title>
-            <pubDate>Wed, 07 Oct 2026 14:43:28 +0000</pubDate>
-            <link>https://github.com/sigitkusuma/copas</link>
-            <sparkle:version>20</sparkle:version>
-            <sparkle:shortVersionString>1.1.6</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Copas 1.1.6</h2>
-
-<p>
-  Fixes the clipboard board sometimes not opening after Copas has been running for a long time.
-</p>
-
-<ul>
-  <li>
-    <strong>Board Reliability:</strong> The board now checks whether its window is really on screen instead of trusting a remembered state, ignores stale app-switch events, and rebuilds its hidden window after sleep and wake, Space changes, or display changes.
-  </li>
-  <li>
-    <strong>Writing Tools:</strong> A stuck Writing Tools state can no longer keep the board from opening.
-  </li>
-  <li>
-    <strong>Diagnostics:</strong> The board now logs why it opens and closes, which makes any recurrence easier to track down.
-  </li>
-</ul>
-]]></description>
-            <enclosure url="https://github.com/sigitkusuma/copas/releases/download/v1.1.6/Copas-1.1.6.zip" length="4470941" type="application/octet-stream" sparkle:edSignature="N9O8cl/0TjkgOC1c6OrFIKaYrrkqwHCrYMcr7sw9vjA6UecsF/DBl2tjivl5BAnjknZuoQZQUGhViOyjftB0CA=="/>
         </item>
     </channel>
 </rss>
