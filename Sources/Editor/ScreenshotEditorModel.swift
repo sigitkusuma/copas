@@ -83,6 +83,9 @@ final class ScreenshotEditorModel {
     @ObservationIgnored let base: CGImage
     @ObservationIgnored let pixelsPerPoint: CGFloat
     @ObservationIgnored let sourceDPI: CGFloat
+    /// The bytes the picture came from, handed back as they are when nothing
+    /// was done to it. Decoding and re-encoding would at best reproduce them.
+    @ObservationIgnored private let original: Data?
 
     private(set) var document: ScreenshotDocument
 
@@ -106,9 +109,10 @@ final class ScreenshotEditorModel {
     /// free, and most edits never use it.
     @ObservationIgnored private(set) lazy var pixelated: CGImage? = ScreenshotRenderer.pixelated(base)
 
-    init(base: CGImage, sourceDPI: CGFloat) {
+    init(base: CGImage, sourceDPI: CGFloat, original: Data? = nil) {
         self.base = base
         self.sourceDPI = sourceDPI
+        self.original = original
         self.pixelsPerPoint = max(1, sourceDPI / 72)
         self.document = ScreenshotDocument(pixelSize: CGSize(width: base.width, height: base.height))
     }
@@ -241,9 +245,18 @@ final class ScreenshotEditorModel {
         document = after
     }
 
+    // MARK: - Enhance
+
+    func setEnhanced(_ isEnhanced: Bool) {
+        guard document.isEnhanced != isEnhanced else { return }
+        beginChange()
+        document.isEnhanced = isEnhanced
+    }
+
     // MARK: - Export
 
     func exportPNG() -> Data? {
+        if document.isUntouched, let original { return original }
         guard let image = ScreenshotRenderer.render(base: base, document: document) else { return nil }
         return ScreenshotRenderer.pngData(for: image, dpi: sourceDPI)
     }

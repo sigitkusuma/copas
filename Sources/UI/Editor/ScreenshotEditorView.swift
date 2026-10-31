@@ -142,6 +142,12 @@ struct ScreenshotEditorView: View {
                 Button("Reset Crop") { model.resetCrop() }
             }
 
+            Toggle(isOn: Binding(get: { model.document.isEnhanced }, set: { model.setEnhanced($0) })) {
+                Label("Enhance", systemImage: "wand.and.stars")
+            }
+            .toggleStyle(.button)
+            .help("Sharpen text and edges in the copied picture. Marks are left as drawn.")
+
             Spacer(minLength: 0)
 
             Text("Return copies  ·  Esc discards")
@@ -168,7 +174,7 @@ private struct ResizePopover: View {
     @State private var height = ""
 
     private static let presets: [(label: String, scale: CGFloat)] = [
-        ("100%", 1), ("75%", 0.75), ("50%", 0.5), ("25%", 0.25),
+        ("200%", 2), ("100%", 1), ("75%", 0.75), ("50%", 0.5), ("25%", 0.25),
     ]
 
     var body: some View {

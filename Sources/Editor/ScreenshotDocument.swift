@@ -106,6 +106,9 @@ struct ScreenshotDocument: Equatable, Sendable {
     var annotations: [Annotation] = []
     private(set) var crop: CGRect?
     private(set) var outputScale: CGFloat = 1
+    /// Sharpens the picture — not the marks on it — on the way out. Recorded
+    /// like the crop, so it can be switched off again without a trace.
+    var isEnhanced = false
 
     init(pixelSize: CGSize) {
         self.pixelSize = pixelSize
@@ -131,6 +134,11 @@ struct ScreenshotDocument: Equatable, Sendable {
     var isCropped: Bool { crop != nil }
     var isResized: Bool { outputScale != 1 }
 
+    /// Nothing to draw, cut, resample or sharpen: the export is the capture.
+    var isUntouched: Bool {
+        annotations.isEmpty && !isCropped && !isResized && !isEnhanced
+    }
+
     /// Keeps the part of `rect` that lies on the picture. A sliver is treated as
     /// "no crop" rather than producing an image that is a few pixels wide.
     mutating func setCrop(_ rect: CGRect) {
@@ -149,7 +157,7 @@ struct ScreenshotDocument: Equatable, Sendable {
         crop = nil
     }
 
-    /// `1` is the cropped size; `0.5` halves both dimensions.
+    /// `1` is the cropped size; `0.5` halves both dimensions, `2` doubles them.
     mutating func setOutputScale(_ scale: CGFloat) {
         guard scale.isFinite, scale > 0 else { return }
         // Never enlarge past 4× — a typo of an extra digit should not ask for a
