@@ -239,6 +239,103 @@ struct ScreenshotRendererTests {
         #expect(ScreenshotRenderer.dpi(of: png) == 144)
         #expect(ScreenshotRenderer.dpi(of: Data("not an image".utf8)) == 72)
     }
+
+    // MARK: Resampling and Enhance
+
+    /// Lanczos reads past the edge of the picture; reading transparency there
+    /// would leave a dark rim around every resized export.
+    @Test func shrinkingKeepsTheEdgesClean() throws {
+        var document = ScreenshotDocument(pixelSize: CGSize(width: 100, height: 80))
+        document.setOutputScale(0.5)
+        let image = try #require(ScreenshotRenderer.render(base: Self.picture(), document: document))
+
+        #expect(image.width == 50 && image.height == 40)
+        #expect(Self.isBlue(Self.pixel(image, 1, 1)), "the marker survives, the right way up")
+        #expect(Self.isWhite(Self.pixel(image, 49, 39)), "bottom-right corner")
+        #expect(Self.isWhite(Self.pixel(image, 49, 20)), "right edge")
+    }
+
+    @Test func enlargingScalesTheMarksWithThePicture() throws {
+        var document = ScreenshotDocument(pixelSize: CGSize(width: 100, height: 80))
+        document.annotations = [
+            Annotation(kind: .rectangle, rect: CGRect(x: 30, y: 20, width: 40, height: 30), color: .red, lineWidth: 4),
+        ]
+        document.setOutputScale(2)
+        let image = try #require(ScreenshotRenderer.render(base: Self.picture(), document: document))
+
+        #expect(image.width == 200 && image.height == 160)
+        #expect(Self.isBlue(Self.pixel(image, 4, 4)))
+        #expect(Self.isRed(Self.pixel(image, 62, 70)), "left edge, at twice its place")
+        #expect(Self.isWhite(Self.pixel(image, 100, 70)), "still an outline")
+        #expect(Self.isWhite(Self.pixel(image, 195, 155)))
+    }
+
+    /// A soft step from dark to light: 80 on the left, 176 on the right, with
+    /// one in-between column, as an edge in a low-resolution capture looks.
+    static func softEdge() -> CGImage {
+        let width = 100, height = 20
+        var bytes = [UInt8](repeating: 255, count: width * height * 4)
+        for y in 0..<height {
+            for x in 0..<width {
+                let value: UInt8 = x < 50 ? 80 : x == 50 ? 128 : 176
+                let i = (y * width + x) * 4
+                bytes[i] = value; bytes[i + 1] = value; bytes[i + 2] = value
+            }
+        }
+        let context = CGContext(
+            data: &bytes, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )!
+        return context.makeImage()!
+    }
+
+    @Test func enhanceSteepensEdgesAndLeavesFlatAreasAlone() throws {
+        let base = Self.softEdge()
+        var document = ScreenshotDocument(pixelSize: CGSize(width: 100, height: 20))
+        document.isEnhanced = true
+        let image = try #require(ScreenshotRenderer.render(base: base, document: document))
+
+        #expect(image.width == 100 && image.height == 20, "Enhance does not change the size")
+        #expect(Self.pixel(image, 49, 10).r < 80 - 3, "the dark side of the edge gets darker")
+        #expect(Self.pixel(image, 51, 10).r > 176 + 3, "the light side gets lighter")
+        #expect(abs(Self.pixel(image, 10, 10).r - 80) <= 2, "flat areas are untouched")
+        #expect(abs(Self.pixel(image, 90, 10).r - 176) <= 2)
+    }
+
+    @Test func enhanceSharpensThePictureButNotTheMarks() throws {
+        var document = ScreenshotDocument(pixelSize: CGSize(width: 100, height: 80))
+        document.isEnhanced = true
+        document.annotations = [
+            Annotation(kind: .rectangle, rect: CGRect(x: 30, y: 20, width: 40, height: 30), color: .red, lineWidth: 4),
+        ]
+        let image = try #require(ScreenshotRenderer.render(base: Self.picture(), document: document))
+
+        #expect(Self.isRed(Self.pixel(image, 31, 35)))
+        #expect(Self.isWhite(Self.pixel(image, 50, 35)))
+        #expect(Self.isBlue(Self.pixel(image, 2, 2)))
+    }
+
+    @Test func aDeepCaptureStaysDeep() throws {
+        let context = CGContext(
+            data: nil, width: 40, height: 30, bitsPerComponent: 16, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.displayP3)!,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )!
+        context.setFillColor(CGColor(srgbRed: 0.5, green: 0.5, blue: 0.5, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: 40, height: 30))
+        let base = try #require(context.makeImage())
+
+        var document = ScreenshotDocument(pixelSize: CGSize(width: 40, height: 30))
+        document.isEnhanced = true
+        let enhanced = try #require(ScreenshotRenderer.render(base: base, document: document))
+        #expect(enhanced.bitsPerComponent == 16)
+
+        document.isEnhanced = false
+        document.annotations = [Annotation(kind: .rectangle, rect: CGRect(x: 5, y: 5, width: 10, height: 10))]
+        let marked = try #require(ScreenshotRenderer.render(base: base, document: document))
+        #expect(marked.bitsPerComponent == 16)
+    }
 }
 
 @MainActor
@@ -351,6 +448,30 @@ struct ScreenshotEditorModelTests {
         let model = Self.model()
         let png = try #require(model.exportPNG())
         #expect(ScreenshotRenderer.dpi(of: png) == 144)
+    }
+
+    @Test func anUntouchedCaptureIsHandedBackByteForByte() throws {
+        // A soft edge, so sharpening has something to change; a flat picture
+        // would come back identical either way.
+        let base = ScreenshotRendererTests.softEdge()
+        let original = try #require(ScreenshotRenderer.pngData(for: base, dpi: 144))
+        let model = ScreenshotEditorModel(base: base, sourceDPI: 144, original: original)
+        #expect(model.exportPNG() == original)
+
+        model.setEnhanced(true)
+        #expect(model.exportPNG() != original, "an enhanced picture is a new picture")
+        model.setEnhanced(false)
+        #expect(model.exportPNG() == original, "and switching it off again restores the capture")
+    }
+
+    @Test func enhanceIsOneUndoableStep() {
+        let model = Self.model()
+        model.setEnhanced(true)
+        model.setEnhanced(true)
+        #expect(model.document.isEnhanced)
+        model.undo()
+        #expect(!model.document.isEnhanced)
+        #expect(!model.canUndo, "turning it on twice is still one change")
     }
 }
 

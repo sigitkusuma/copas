@@ -29,7 +29,7 @@ final class ScreenshotEditorWindowController: NSObject, NSWindowDelegate {
               let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
         else { return nil }
 
-        let model = ScreenshotEditorModel(base: image, sourceDPI: ScreenshotRenderer.dpi(of: png))
+        let model = ScreenshotEditorModel(base: image, sourceDPI: ScreenshotRenderer.dpi(of: png), original: png)
         self.model = model
 
         if let front = NSWorkspace.shared.frontmostApplication,

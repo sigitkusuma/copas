@@ -1,6 +1,7 @@
 import AppKit
 import CoreGraphics
 import CoreImage
+import CoreImage.CIFilterBuiltins
 import ImageIO
 import UniformTypeIdentifiers
 
@@ -18,36 +19,123 @@ enum ScreenshotRenderer {
 
     private static let ciContext = CIContext(options: [.useSoftwareRenderer: false])
 
+    /// Resamples in gamma-encoded sRGB rather than Core Image's default linear
+    /// light. Averaging dark text against a light background in linear light
+    /// lets the background win, and a shrunk screenshot's text comes out thin
+    /// and washed out; this keeps its weight.
+    private static let resamplingContext = CIContext(options: [
+        .useSoftwareRenderer: false,
+        .workingColorSpace: CGColorSpace(name: CGColorSpace.extendedSRGB)!,
+    ])
+
     // MARK: - Export
 
-    /// The finished picture: cropped, annotated, resized.
+    /// The finished picture: cropped, annotated, resized, enhanced.
+    ///
+    /// At its own size and unenhanced the picture is drawn straight across,
+    /// pixel for pixel. Otherwise only the picture goes through Core Image —
+    /// Lanczos for the resize, a luminance sharpen for Enhance — and the marks
+    /// are drawn on top at the output size, so a label stays as crisp at 200%
+    /// as at 100% instead of being resampled along with the pixels under it.
     static func render(base: CGImage, document: ScreenshotDocument) -> CGImage? {
         let output = document.outputSize
-        let width = Int(output.width)
-        let height = Int(output.height)
-
         let space = base.colorSpace.flatMap { $0.model == .rgb ? $0 : nil }
             ?? CGColorSpace(name: CGColorSpace.sRGB)!
-        guard let context = CGContext(
-            data: nil,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: space,
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return nil }
+        // A 16-bit capture (an HDR or wide-gamut display) keeps its depth
+        // rather than being banded down to 8 bits on its way through.
+        let isDeep = base.bitsPerComponent > 8
+
+        guard let context = makeContext(size: output, space: space, deep: isDeep)
+            ?? makeContext(size: output, space: space, deep: false)
+        else { return nil }
 
         context.interpolationQuality = .high
 
-        // Top-left origin, then image pixels, then the crop offset.
-        context.translateBy(x: 0, y: CGFloat(height))
+        // Top-left origin.
+        context.translateBy(x: 0, y: output.height)
         context.scaleBy(x: 1, y: -1)
+
+        let resamples = document.isResized || document.isEnhanced
+        if resamples {
+            guard let picture = processed(base, document: document, space: space, deep: isDeep) else { return nil }
+            drawImage(picture, in: CGRect(origin: .zero, size: output), context: context)
+        }
+
+        // Then image pixels, then the crop offset.
         context.scaleBy(x: output.width / document.cropRect.width, y: output.height / document.cropRect.height)
         context.translateBy(x: -document.cropRect.minX, y: -document.cropRect.minY)
 
-        draw(base: base, document: document, in: context)
+        if resamples {
+            drawAnnotations(base: base, document: document, in: context)
+        } else {
+            draw(base: base, document: document, in: context)
+        }
         return context.makeImage()
+    }
+
+    private static func makeContext(size: CGSize, space: CGColorSpace, deep: Bool) -> CGContext? {
+        CGContext(
+            data: nil,
+            width: Int(size.width),
+            height: Int(size.height),
+            bitsPerComponent: deep ? 16 : 8,
+            bytesPerRow: 0,
+            space: space,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )
+    }
+
+    /// The cropped picture at the output size, sharpened if asked, with no marks.
+    private static func processed(_ base: CGImage, document: ScreenshotDocument, space: CGColorSpace, deep: Bool) -> CGImage? {
+        let crop = document.cropRect
+        let output = document.outputSize
+        let scaleX = output.width / crop.width
+        let scaleY = output.height / crop.height
+
+        // Core Image counts from the bottom-left.
+        let region = CGRect(
+            x: crop.minX,
+            y: CGFloat(base.height) - crop.maxY,
+            width: crop.width,
+            height: crop.height
+        )
+        // Lanczos and the sharpen both read past the pixel they write. Without
+        // real pixels there — the rest of the capture, or the edge repeated —
+        // they would read transparency and leave a dark, see-through border.
+        let reach = 6 / min(1, scaleX, scaleY)
+        var image = CIImage(cgImage: base)
+            .clampedToExtent()
+            .cropped(to: region.insetBy(dx: -reach, dy: -reach))
+            .transformed(by: CGAffineTransform(translationX: -region.minX, y: -region.minY))
+
+        if document.isResized {
+            let lanczos = CIFilter.lanczosScaleTransform()
+            lanczos.inputImage = image
+            lanczos.scale = Float(scaleY)
+            lanczos.aspectRatio = Float(scaleX / scaleY)
+            guard let scaled = lanczos.outputImage else { return nil }
+            image = scaled
+        }
+
+        if document.isEnhanced {
+            // Luminance only, so coloured text and edges sharpen without the
+            // red and blue fringes a per-channel sharpen leaves on them. An
+            // enlarged picture is softer over a wider band, so the radius
+            // grows with it.
+            let sharpen = CIFilter.sharpenLuminance()
+            sharpen.inputImage = image
+            sharpen.sharpness = 0.6
+            sharpen.radius = Float(1.2 * max(1, scaleY))
+            guard let sharpened = sharpen.outputImage else { return nil }
+            image = sharpened
+        }
+
+        return resamplingContext.createCGImage(
+            image,
+            from: CGRect(origin: .zero, size: output),
+            format: deep ? .RGBA16 : .RGBA8,
+            colorSpace: space
+        )
     }
 
     /// PNG bytes for `image`, keeping the source's pixel density.
@@ -88,9 +176,19 @@ enum ScreenshotRenderer {
         pixelated: CGImage? = nil,
         skipping skipped: UUID? = nil
     ) {
-        let bounds = document.bounds
-        drawImage(base, in: bounds, context: context)
+        drawImage(base, in: document.bounds, context: context)
+        drawAnnotations(base: base, document: document, in: context, pixelated: pixelated, skipping: skipped)
+    }
 
+    /// Every mark, without the picture under them.
+    static func drawAnnotations(
+        base: CGImage,
+        document: ScreenshotDocument,
+        in context: CGContext,
+        pixelated: CGImage? = nil,
+        skipping skipped: UUID? = nil
+    ) {
+        let bounds = document.bounds
         let needsPixels = document.annotations.contains { $0.kind == .blur }
         let coarse = needsPixels ? (pixelated ?? self.pixelated(base)) : nil
 
